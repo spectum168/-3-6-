@@ -1,6 +1,7 @@
 {
-  "name": "react-example",
+  "name": "radiology-qc-inspection-system",
   "private": true,
+  "description": "ระบบตรวจสอบคุณภาพเครื่องเอกซเรย์และอุปกรณ์ป้องกันรังสี ประจำไตรมาส โรงพยาบาลแม่ทา",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
