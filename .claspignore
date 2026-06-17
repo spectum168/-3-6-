@@ -1,0 +1,7 @@
+# Ignore all files by default
+**/*
+
+# Permit only Apps Script source files
+!Code.gs
+!Index.html
+!appsscript.json
