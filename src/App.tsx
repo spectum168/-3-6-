@@ -69,7 +69,10 @@ const INITIAL_HISTORY: InspectionReport[] = [
     ],
     operatorSignature: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='30'><path d='M10,20 Q30,5 60,25 T90,10' stroke='navy' stroke-width='2' fill='none'/></svg>",
     reviewerSignature: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='30'><path d='M15,15 C45,25 70,5 85,20' stroke='indigo' stroke-width='2.5' fill='none'/></svg>",
-    suggestions: "เครื่องสมบูรณ์ดีมาก สปริงพยุงน้ำหนักตึงสม่ำเสมอ แนะนำใช้ตรวจสอบปกติ"
+    suggestions: "เครื่องสมบูรณ์ดีมาก สปริงพยุงน้ำหนักตึงสม่ำเสมอ แนะนำใช้ตรวจสอบปกติ",
+    collimatorLinks: [
+      "https://images.unsplash.com/photo-1579154204601-01588f351166?auto=format&fit=crop&q=80&w=500"
+    ]
   },
   {
     timestamp: "12/06/2026, 14:15:33",
@@ -92,7 +95,10 @@ const INITIAL_HISTORY: InspectionReport[] = [
     ],
     operatorSignature: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='30'><path d='M5,15 Q30,25 50,15 T95,15' stroke='navy' stroke-width='2' fill='none'/></svg>",
     reviewerSignature: "",
-    suggestions: "พบถุงมือตะกั่วด้านขวามีรอยร้าวรังสีรั่วบริเวณโคนนิ้วโป้ง ได้คัดแยกรอทำลายและจัดหาชิ้นสำรองทดแทนแล้ว"
+    suggestions: "พบถุงมือตะกั่วด้านขวามีรอยร้าวรังสีรั่วบริเวณโคนนิ้วโป้ง ได้คัดแยกรอทำลายและจัดหาชิ้นสำรองทดแทนแล้ว",
+    collimatorLinks: [
+      "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=500"
+    ]
   },
   {
     timestamp: "05/06/2026, 10:02:11",
@@ -115,9 +121,34 @@ const INITIAL_HISTORY: InspectionReport[] = [
     ],
     operatorSignature: "",
     reviewerSignature: "",
-    suggestions: "ค่าเบี่ยงเบน Collimator แกน X เกินเกณฑ์ 2% ของ SID (วัดได้ 2.4 cm) แนะนำแจ้งประสานช่างบำรุงเปลี่ยนตัวเบี่ยงทิศและตรวจเช็คหลอดส่องใหม่"
+    suggestions: "ค่าเบี่ยงเบน Collimator แกน X เกินเกณฑ์ 2% ของ SID (วัดได้ 2.4 cm) แนะนำแจ้งประสานช่างบำรุงเปลี่ยนตัวเบี่ยงทิศและตรวจเช็คหลอดส่องใหม่",
+    collimatorLinks: []
   }
 ];
+
+const getDirectImageUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  
+  if (trimmed.startsWith('data:')) return trimmed;
+  
+  // Convert Google Drive sharing link to a direct loadable image source url
+  const driveFilePattern = /\/file\/d\/([a-zA-Z0-9_-]+)/;
+  const driveOpenPattern = /[?&]id=([a-zA-Z0-9_-]+)/;
+  
+  let match = trimmed.match(driveFilePattern);
+  if (match && match[1]) {
+    return `https://docs.google.com/uc?export=view&id=${match[1]}`;
+  }
+  
+  match = trimmed.match(driveOpenPattern);
+  if (match && match[1]) {
+    return `https://docs.google.com/uc?export=view&id=${match[1]}`;
+  }
+  
+  return trimmed;
+};
 
 export default function App() {
   // Tab control
@@ -1121,17 +1152,35 @@ export default function App() {
                   className="bg-white border-2 border-slate-300 rounded-2xl p-8 max-w-4xl mx-auto space-y-6 shadow-lg text-slate-900 border"
                   id="clinical-printed-report-preview"
                 >
-                <div className="flex justify-between items-center pb-4 border-b border-slate-200">
-                  <span className="text-xs font-bold text-indigo-600 tracking-wider uppercase flex items-center gap-1">
-                    <Sparkles className="w-4 h-4 text-amber-500" /> หน้าต่างจำลองรายงานก่อนจัดพิมพ์ PDF ทางการ (Print Preview)
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-4 border-b border-slate-200">
+                  <span className="text-xs font-bold text-indigo-600 tracking-wider uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" /> พรีวิวหน้ารายงานใบรับรองโรงพยาบาล (Hospital Certificate Preview)
                   </span>
                   <button
                     type="button"
-                    onClick={() => window.print()}
-                    className="px-5 py-2 bg-slate-900 hover:bg-black text-white text-xs font-black rounded-lg flex items-center gap-1.5 shadow"
+                    onClick={() => {
+                      setTimeout(() => {
+                        window.print();
+                      }, 100);
+                    }}
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-black rounded-lg flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer"
                   >
-                    <Printer className="w-4 h-4" /> กดเรียก Print ทันที (Ctrl+P)
+                    <span className="text-sm">🖨️</span> สั่งพิมพ์ / ออกเป็น PDF
                   </button>
+                </div>
+
+                {/* PDF Generation Guideline Banner */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-900 space-y-2 print:hidden shadow-sm">
+                  <div className="flex items-center gap-2 text-blue-800 font-bold">
+                    <span>📄</span>
+                    <span>คู่มือการบันทึกรายงานเป็นไฟล์ PDF คุณภาพสูง (สำหรับผู้ปฏิบัติงาน):</span>
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1 text-[11px] text-blue-950 font-light pl-1.5 leading-relaxed">
+                    <li>คลิกที่ปุ่ม <strong className="font-bold text-blue-800">"🖨️ สั่งพิมพ์ / ออกเป็น PDF"</strong> สีน้ำเงินด้านบน เพื่อเรียกหน้าต่างจัดพิมพ์ของเบราว์เซอร์</li>
+                    <li>ในหน้าเลือกเครื่องพิมพ์ (Print Dialogue) ให้สังเกตหัวข้อ <strong className="font-bold text-blue-800">ปลายทาง (Destination)</strong></li>
+                    <li>เปลี่ยนค่าปลายทางจากตัวเครื่องพิมพ์กระดาษ ให้เป็น <strong className="font-bold text-blue-800">"บันทึกเป็น PDF" (Save as PDF)</strong></li>
+                    <li>แนะให้เลือกขนาดกระดาษเป็น <strong className="font-bold">A4</strong> แนะนำเปิดตัวเลือก <strong className="font-bold">"กราฟิกพื้นหลัง" (Background Graphics)</strong> เพื่อให้สีตารางเกณฑ์วัดผลและรูปภาพแสดงอย่างคมชัดสวยงาม</li>
+                  </ol>
                 </div>
 
                 {/* Simulated physical paper formatting layout */}
@@ -1194,22 +1243,61 @@ export default function App() {
                     <h4 className="text-xs font-bold text-black mb-1.5 pb-1 border-b border-slate-400">
                       <span>• รายงานพิกัดคำนวณเบี่ยงเบนลำแสงคอลลิเมเตอร์ (Collimator accuracy parameters)</span>
                     </h4>
-                    <div className="grid grid-cols-3 gap-3 border border-slate-200 p-3 bg-slate-50/50 rounded-lg text-center font-medium">
-                      <div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 border border-slate-200 p-3 bg-slate-50/50 rounded-lg font-medium">
+                      <div className="text-center flex flex-col justify-center">
                         <span className="text-slate-500 block">ระยะฉายทดสอบ (SID)</span>
                         <strong className="text-sm font-extrabold text-slate-800 font-mono">{history[activeReportIndex].sid} cm</strong>
                       </div>
-                      <div>
+                      <div className="text-center flex flex-col justify-center">
                         <span className="text-slate-500 block">ค่าคลาดเคลื่อนแนวเฉลยสูงสุด</span>
                         <strong className="text-sm font-extrabold text-slate-800 font-mono">
                           X = {history[activeReportIndex].errorX.toFixed(1)} cm | Y = {history[activeReportIndex].errorY.toFixed(1)} cm
                         </strong>
                       </div>
-                      <div>
+                      <div className="text-center flex flex-col justify-center">
                         <span className="text-slate-500 block">บทวิเคราะห์ระบบความปลอดภัย</span>
                         <strong className={`text-sm font-extrabold ${history[activeReportIndex].alignmentResult === 'PASS' ? 'text-emerald-700' : 'text-rose-600'}`}>
                           {history[activeReportIndex].alignmentResult === 'PASS' ? 'ผ่านมาตรฐาน (PASS)' : 'ตกมาตรฐาน (FAIL)'}
                         </strong>
+                      </div>
+                      <div className="border-t md:border-t-0 md:border-l border-slate-200 pt-2.5 md:pt-0 md:pl-3 flex flex-col justify-center items-center">
+                        <span className="text-slate-500 block text-center mb-1 text-[10px]">ภาพถ่ายตรวจสภาพ / ภาพอ้างอิง</span>
+                        {history[activeReportIndex].collimatorLinks && history[activeReportIndex].collimatorLinks!.filter(l => l.trim() !== '').length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 items-center justify-center">
+                            {history[activeReportIndex].collimatorLinks!.filter(l => l.trim() !== '').map((link, idx) => (
+                              <a
+                                key={idx}
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative group/print h-9 w-12 border border-slate-200 rounded-md overflow-hidden bg-slate-50 cursor-pointer block hover:ring-1 hover:ring-indigo-500 transition-all shadow-sm"
+                                title="คลิกเพื่อเปิดดูรูปภาพความละเอียดสูงในแท็บใหม่"
+                              >
+                                <img 
+                                  src={getDirectImageUrl(link)} 
+                                  alt="Collimator report thumb" 
+                                  className="h-full w-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const parent = e.currentTarget.parentElement;
+                                    if (parent) {
+                                      const fallback = document.createElement('div');
+                                      fallback.className = "absolute inset-0 flex items-center justify-center bg-slate-100 text-[6px] text-slate-500 text-center uppercase";
+                                      fallback.innerText = "เปิดลิงก์";
+                                      parent.appendChild(fallback);
+                                    }
+                                  }}
+                                />
+                                <span className="absolute bottom-0 right-0 left-0 bg-slate-900/65 text-[5px] text-white font-bold text-center py-0.5 uppercase tracking-wider print:hidden">
+                                  เปิดดู
+                                </span>
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-[9px] font-light text-center">ไม่ได้แนบภาพถ่ายคอลลิเมเตอร์</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1223,30 +1311,64 @@ export default function App() {
                       <thead>
                         <tr className="bg-indigo-50 border-b border-slate-300 text-slate-800 font-bold">
                           <th className="p-2 border-r border-slate-300 text-black">รหัสตรวจวัด / ยี่ห้อเกราะป้องกัน</th>
-                          <th className="p-2 border-r border-slate-300 text-black w-40 text-center">สภาพเย็บขอบตะกั่วภายนอก</th>
-                          <th className="p-2 text-center text-black w-48">ผลเบี่ยงเบนหรือรอยแตกรังสี</th>
+                          <th className="p-2 border-r border-slate-300 text-black w-36 text-center">สภาพเย็บขอบตะกั่วภายนอก</th>
+                          <th className="p-2 border-r border-slate-300 text-center text-black w-40">ผลเบี่ยงเบนหรือรอยแตกรังสี</th>
+                          <th className="p-2 text-center text-black w-44">ภาพถ่ายตรวจสภาพ / ภาพอ้างอิง</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-300 text-slate-800">
                         {history[activeReportIndex].protectionGear.length === 0 ? (
                           <tr>
-                            <td colSpan={3} className="p-2 text-center text-slate-400 italic">ไม่ได้พ่วงหรือระบุจัดตรวจอุปกรณ์ป้องกันรังสีสำหรับเครื่องประเภทนี้</td>
+                            <td colSpan={4} className="p-2 text-center text-slate-400 italic">ไม่ได้พ่วงหรือระบุจัดตรวจอุปกรณ์ป้องกันรังสีสำหรับเครื่องประเภทนี้</td>
                           </tr>
                         ) : (
-                          history[activeReportIndex].protectionGear.map((g, i) => (
-                            <tr key={i}>
-                              <td className="p-1.5 border-r border-slate-300 font-mono font-bold text-slate-900">{g.equipmentId}</td>
-                              <td className="p-1.5 border-r border-slate-300 text-center">
-                                {g.visualStatus === 'Normal' ? 'สมบูรณ์ดี' : 'ชำรุดเสียหายเกลียวหัก'}
-                              </td>
-                              <td className="p-1.5 text-center font-bold">
-                                {g.crackStatus === 'No Cracks' 
-                                  ? <span className="text-emerald-700">ไม่มีร้าวผ่านฉลุย (PASS)</span> 
-                                  : <span className="text-rose-600 font-black">พบแนวร้าวรังสีรั่ว (FAIL)</span>
-                                }
-                              </td>
-                            </tr>
-                          ))
+                          history[activeReportIndex].protectionGear.map((g, i) => {
+                            const actualImg = g.imageUrl;
+
+                            return (
+                              <tr key={i}>
+                                <td className="p-1.5 border-r border-slate-300 font-mono font-bold text-slate-900">{g.equipmentId}</td>
+                                <td className="p-1.5 border-r border-slate-300 text-center">
+                                  {g.visualStatus === 'Normal' ? 'สมบูรณ์ดี' : 'ชำรุดเสียหายเกลียวหัก'}
+                                </td>
+                                <td className="p-1.5 border-r border-slate-300 text-center font-bold">
+                                  {g.crackStatus === 'No Cracks' 
+                                    ? <span className="text-emerald-700 font-bold">ไม่มีร้าวผ่านฉลุย (PASS)</span> 
+                                    : <span className="text-rose-600 font-black">พบแนวร้าวรังสีรั่ว (FAIL)</span>
+                                  }
+                                </td>
+                                <td className="p-1.5 text-center">
+                                  {actualImg && actualImg.trim() ? (
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <a
+                                        href={actualImg}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="relative group/print h-9 w-12 border border-slate-200 rounded-md overflow-hidden bg-slate-50 cursor-pointer block hover:ring-1 hover:ring-indigo-500 transition-all shadow-sm"
+                                        title="คลิกเพื่อเปิดดูรูปภาพความละเอียดสูงในแท็บใหม่"
+                                      >
+                                        <img 
+                                          src={getDirectImageUrl(actualImg)} 
+                                          alt="Equipment report thumb" 
+                                          className="h-full w-full object-cover"
+                                          referrerPolicy="no-referrer"
+                                          onError={(e) => {
+                                            // Quietly hide if load breaks
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                        <span className="absolute bottom-0 right-0 left-0 bg-slate-900/65 text-[6px] text-white font-bold text-center py-0.5 uppercase tracking-wider print:hidden">
+                                          เปิดรูป
+                                        </span>
+                                      </a>
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 text-[10px] font-light">ไม่ได้แนบภาพถ่ายหลักฐาน</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
