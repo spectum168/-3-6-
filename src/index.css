@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+@theme {
+  --font-signature: "Charm", "Homemade Apple", cursive;
+}

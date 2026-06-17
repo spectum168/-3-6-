@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบตรวจสอบคุณภาพและสมมรรถนะเชิงกลเครื่องเอกซเรย์ - รพ.แม่ทา</title>
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Thai Custom Web Font Integrations -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .font-logo {
+      font-family: 'Space Grotesk', 'Sarabun', sans-serif;
+    }
+    /* Simple dynamic drawing styles */
+    .signature-canvas {
+      border: 2px dashed #cbd5e1;
+      border-radius: 0.5rem;
+      cursor: crosshair;
+      touch-action: none; /* Disables scroll on mobile drawing */
+      background-color: #f8fafc;
+    }
+    /* Print layout optimization for medical report */
+    @media print {
+      body {
+        background-color: white !important;
+        color: black !important;
+        font-size: 12px;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-full-card {
+        box-shadow: none !important;
+        border: 1px solid #94a3b8 !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        background-color: white !important;
+      }
+      .print-title {
+        text-align: center !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        margin-bottom: 5px !important;
+      }
+      .print-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+      }
+      .signature-preview {
+        max-height: 80px !important;
+        object-fit: contain;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased flex flex-col justify-between">
+
+  <!-- Header Section -->
+  <header class="bg-gradient-to-r from-blue-900 to-indigo-950 text-white shadow-md no-print">
+    <div class="max-w-7xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-white/10 rounded-lg">
+          <i data-lucide="shield-check" class="w-8 h-8 text-blue-300"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-wide">แผนกรังสีเทคนิค โรงพยาบาลแม่ทา</h1>
+          <p class="text-xs text-blue-200 mt-0.5 font-light">ระบบตรวจเครื่องเอกซเรย์คัดกรองและอุปกรณ์ป้องกันรังสี ประจำไตรมาส (3-6 เดือน)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="px-3 py-1 bg-blue-800/60 rounded-full text-xs font-semibold text-blue-200 border border-blue-700/50 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> App Connected
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="border-b border-slate-200 bg-white shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 flex gap-4">
+      <button onclick="switchTab('form-tab')" id="btn-form-tab" class="px-5 py-3 border-b-2 border-indigo-600 text-indigo-600 font-medium text-sm transition-all focus:outline-none flex items-center gap-2">
+        <i data-lucide="clipboard-list" class="w-4 h-4"></i> แบบบันทึกคุณภาพเอกซเรย์ (QC Form)
+      </button>
+      <button onclick="switchTab('dashboard-tab')" id="btn-dashboard-tab" class="px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm transition-all focus:outline-none flex items-center gap-2">
+        <i data-lucide="pie-chart" class="w-4 h-4"></i> แดชบอร์ดและรายงานการควบคุมคุณภาพ (Dashboard)
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+
+    <!-- Tab 1: Form View -->
+    <section id="form-tab" class="space-y-8">
+      
+      <!-- General Header Information -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100 flex items-center gap-2 text-indigo-950">
+          <i data-lucide="info" class="w-5 h-5 text-indigo-600"></i> ข้อมูลตรวจประเมินทั่วไป
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">พนักงานรังสีเทคนิคผู้ทำ QC (Operator)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <i data-lucide="user" class="w-4 h-4"></i>
+              </span>
+              <input type="text" id="operatorName" placeholder="ระบุชื่อ-นามสกุล" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">หัวหน้าแผนกรังสีคุมตรวจสอบ (Reviewer)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+              </span>
+              <input type="text" id="reviewerName" placeholder="ระบุชื่อหัวหน้างาน" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">รหัส/หมายเลขเครื่องเอกซเรย์ (Machine ID)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <i data-lucide="drill" class="w-4 h-4"></i>
+              </span>
+              <select id="machineId" class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none cursor-pointer">
+                <option value="XRAY-GEN-01">X-Ray General 01 (ห้องตรวจ 1)</option>
+                <option value="XRAY-GEN-02">X-Ray General 02 (ห้องตรวจ 2)</option>
+                <option value="XRAY-PORT-01">Portable X-Ray 01 (ตึกผู้ป่วยใน)</option>
+                <option value="XRAY-DENT-01">Dental Panoramic 01 (ห้องฟัน)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Part 1: Mechanical Inspection -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-800 mb-1.5 flex items-center gap-2 text-indigo-950">
+          <i data-lucide="settings" class="w-5 h-5 text-indigo-600"></i> ส่วนที่ 1: การตรวจสอบสมรรถนะเชิงกลและโครงสร้างทั่วไป (F4 Standard Layout)
+        </h2>
+        <p class="text-xs text-slate-500 mb-5">ประเมินเสถียรภาพความมั่นคงของชิ้นส่วนและสวิตช์ควบคุมระบบหลัก</p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold">
+                <th class="p-3 w-12 text-center">#</th>
+                <th class="p-3">รายการตรวจสอบเชิงกล (Mechanical Audit Guidelines)</th>
+                <th class="p-3 w-48 text-center">ผลการตรวจ</th>
+                <th class="p-3">ความคิดเห็นและประเมินเพิ่มเติม</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-sm">
+              <!-- Item 1 -->
+              <tr>
+                <td class="p-3 text-center font-medium text-slate-400">1</td>
+                <td class="p-3 font-medium text-slate-700">ความมั่นคงของตัวเครื่องและหน้ากากปุ่มกดปุ่มเลื่อน (Control & System Body)</td>
+                <td class="p-3 text-center">
+                  <div class="inline-flex gap-2 bg-slate-100 p-0.5 rounded-lg text-xs leading-none">
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="mechanicalStability" value="PASS" checked class="accent-indigo-600"> <span>ผ่าน</span>
+                    </label>
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="mechanicalStability" value="FAIL" class="accent-red-500"> <span>ไม่ผ่าน</span>
+                    </label>
+                  </div>
+                </td>
+                <td class="p-3">
+                  <input type="text" id="mechanicalStabilityComments" placeholder="ระบุเพิ่มเติม (ถ้ามี)" class="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-xs focus:bg-white focus:outline-none">
+                </td>
+              </tr>
+              <!-- Item 2 -->
+              <tr>
+                <td class="p-3 text-center font-medium text-slate-400">2</td>
+                <td class="p-3 font-medium text-slate-700">ระบบเบรกและล็อคแกนมุมการเคลื่อนที่ต่างๆ (Locking & Braking Systems)</td>
+                <td class="p-3 text-center">
+                  <div class="inline-flex gap-2 bg-slate-100 p-0.5 rounded-lg text-xs leading-none">
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="lockingBraking" value="PASS" checked class="accent-indigo-600"> <span>ผ่าน</span>
+                    </label>
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="lockingBraking" value="FAIL" class="accent-red-500"> <span>ไม่ผ่าน</span>
+                    </label>
+                  </div>
+                </td>
+                <td class="p-3">
+                  <input type="text" id="lockingBrakingComments" placeholder="ระบุเพิ่มเติม (ถ้ามี)" class="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-xs focus:bg-white focus:outline-none">
+                </td>
+              </tr>
+              <!-- Item 3 -->
+              <tr>
+                <td class="p-3 text-center font-medium text-slate-400">3</td>
+                <td class="p-3 font-medium text-slate-700">ระบบคอลลิเมเตอร์ หลอดไฟส่องทาง และไฟกริดนำแสง (Collimator Indicator Alignment)</td>
+                <td class="p-3 text-center">
+                  <div class="inline-flex gap-2 bg-slate-100 p-0.5 rounded-lg text-xs leading-none">
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="collimatorIndicator" value="PASS" checked class="accent-indigo-600"> <span>ผ่าน</span>
+                    </label>
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="collimatorIndicator" value="FAIL" class="accent-red-500"> <span>ไม่ผ่าน</span>
+                    </label>
+                  </div>
+                </td>
+                <td class="p-3">
+                  <input type="text" id="collimatorIndicatorComments" placeholder="ระบุเพิ่มเติม (ถ้ามี)" class="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-xs focus:bg-white focus:outline-none">
+                </td>
+              </tr>
+              <!-- Item 4 -->
+              <tr>
+                <td class="p-3 text-center font-medium text-slate-400">4</td>
+                <td class="p-3 font-medium text-slate-700">สวิตช์สายเคเบิลไฟฟ้ากำลังและความปลอดภัยภายนอก (High Tension Cables & Switches)</td>
+                <td class="p-3 text-center">
+                  <div class="inline-flex gap-2 bg-slate-100 p-0.5 rounded-lg text-xs leading-none">
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="powerCables" value="PASS" checked class="accent-indigo-600"> <span>ผ่าน</span>
+                    </label>
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="powerCables" value="FAIL" class="accent-red-500"> <span>ไม่ผ่าน</span>
+                    </label>
+                  </div>
+                </td>
+                <td class="p-3">
+                  <input type="text" id="powerCablesComments" placeholder="ระบุเพิ่มเติม (ถ้ามี)" class="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-xs focus:bg-white focus:outline-none">
+                </td>
+              </tr>
+              <!-- Item 5 -->
+              <tr>
+                <td class="p-3 text-center font-medium text-slate-400">5</td>
+                <td class="p-3 font-medium text-slate-700">การจัดตําแหน่งแสดงผลบนหน้าต่างคอนโทรลและความคมชัดดิจิตอล (Control Board Displays)</td>
+                <td class="p-3 text-center">
+                  <div class="inline-flex gap-2 bg-slate-100 p-0.5 rounded-lg text-xs leading-none">
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="displayStatus" value="PASS" checked class="accent-indigo-600"> <span>ผ่าน</span>
+                    </label>
+                    <label class="flex items-center gap-1 px-2.5 py-1.5 rounded-md cursor-pointer transition-all hover:bg-white select-none">
+                      <input type="radio" name="displayStatus" value="FAIL" class="accent-red-500"> <span>ไม่ผ่าน</span>
+                    </label>
+                  </div>
+                </td>
+                <td class="p-3">
+                  <input type="text" id="displayStatusComments" placeholder="ระบุเพิ่มเติม (ถ้ามี)" class="w-full bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-xs focus:bg-white focus:outline-none">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Part 2: Collimator Alignment Calculator -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-800 mb-1.5 flex items-center gap-2 text-indigo-950">
+          <i data-lucide="navigation-2" class="w-5 h-5 text-indigo-600"></i> ส่วนที่ 2: การวัดประเมินความสอดคล้องลำรังสีและแสงนำทาง (Beam Alignment Collimator Test)
+        </h2>
+        <p class="text-xs text-slate-500 mb-5">คำนวณหาค่าความเบี่ยงเบนแนวรังสีเปรียบเทียบในแนวพิกัด X และ Y (พิกัดสูงสุดต้องไม่เกิน 2% ของระยะ SID)</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <!-- Inputs Column -->
+          <div class="lg:col-span-5 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">ระยะโฟกัสตัวรับภาพ (SID - Source to Image Distance) (cm)</label>
+              <div class="relative">
+                <input type="number" id="sid" value="100" oninput="calculateAlignment()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">cm</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">ค่าคลาดเคลื่อนทิศทาง X (Error X)</label>
+                <div class="relative">
+                  <input type="number" step="0.1" id="errorX" value="0.5" oninput="calculateAlignment()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <span class="absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">cm</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">ค่าคลาดเคลื่อนทิศทาง Y (Error Y)</label>
+                <div class="relative">
+                  <input type="number" step="0.1" id="errorY" value="0.8" oninput="calculateAlignment()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <span class="absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">cm</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Calculation Output Dashboard -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-600 font-medium">เกณฑ์ขีดจำกัดความปลอดภัย (2% ของ SID)</span>
+                <span id="limit-label" class="font-bold text-slate-800">2.0 cm</span>
+              </div>
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-600 font-medium">ค่าเบี่ยงเบนพิกัดสูงสุดที่ตรวจวัดได้</span>
+                <span id="actual-error-label" class="font-bold text-indigo-700">0.8 cm</span>
+              </div>
+              
+              <div id="alignment-status-badge" class="py-2.5 rounded-lg flex items-center justify-center gap-2 text-white font-bold tracking-wider text-sm transition-all duration-300 bg-emerald-600 shadow-sm shadow-emerald-100">
+                <i data-lucide="check-circle" class="w-5 h-5"></i> ผ่านมาตรฐาน (PASS)
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic SVG alignment graphic visualizer -->
+          <div class="lg:col-span-7 flex flex-col items-center justify-center p-4 bg-slate-900 rounded-xl max-w-md mx-auto w-full border border-slate-800 relative overflow-hidden">
+            <span class="absolute top-2.5 left-3 text-slate-500 text-[10px] font-mono uppercase tracking-widest">Collimator Real-Time Sim</span>
+            <svg id="alignment-graphic" viewBox="0 0 200 200" class="w-48 h-48 mt-2">
+              <!-- Grid background -->
+              <circle cx="100" cy="100" r="90" stroke="rgba(255,255,255,0.05)" stroke-width="1.5" fill="none" />
+              <line x1="100" y1="10" x2="100" y2="190" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="2,2"/>
+              <line x1="10" y1="100" x2="190" y2="100" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="2,2"/>
+              
+              <!-- Acceptable threshold area (2% limit) -->
+              <rect id="visual-limit-box" x="60" y="60" width="80" height="80" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,3" fill="rgba(245,158,11,0.03)" />
+              <text x="145" y="65" fill="#f59e0b" font-size="6" font-family="sans-serif">LIMIT (2%)</text>
+
+              <!-- Central perfect target -->
+              <circle cx="100" cy="100" r="4" fill="#3b82f6" />
+              <circle cx="100" cy="100" r="40" stroke="rgba(59,130,246,0.15)" stroke-width="1" fill="none" />
+              
+              <!-- Simulated Beam Position reflecting offsets -->
+              <!-- SID 100 makes scale 10px per cm -->
+              <rect id="visual-beam-box" x="95" y="92" width="10" height="10" stroke="#10b981" stroke-width="2.5" fill="rgba(16,185,129,0.15)" class="transition-all duration-300" />
+              <!-- Highlight center dot of misaligned beam -->
+              <circle id="visual-beam-center" cx="100" cy="97" r="3" fill="#10b981" class="transition-all duration-300" />
+            </svg>
+            <div class="mt-2.5 text-center px-4">
+              <span class="text-[10px] font-mono text-slate-400 block">กรอบสีเหลืองประสานขอบข่ายขีดจำกัดความปลอดภัย | สีเขียวแทนค่ารังสีจริง</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Part 3: Dynamic Protection Equipment Rows -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-2 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2 text-indigo-950">
+              <i data-lucide="shield" class="w-5 h-5 text-indigo-600"></i> ส่วนที่ 3: ระบบบันทึกตรวจสอบและภาพรอยร้าวอุปกรณ์ป้องกันพนักงานรังสี
+            </h2>
+            <p class="text-xs text-slate-500">ตรวจสอบชุดตะกั่ว (Lead Aprons), แผ่นคุ้มคอ (Thyroid Shields), และฉากบังสัญญาณ</p>
+          </div>
+          <button type="button" onclick="addEquipmentRow()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-all hover:shadow-md flex items-center gap-1.5 self-start">
+            <i data-lucide="plus" class="w-4.5 h-4.5"></i> เพิ่มชุดอุปกรณ์ตรวจเช็ค
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-semibold">
+                <th class="p-3 w-48">รหัส/ชื่อยี่ห้ออุปกรณ์ (ID)</th>
+                <th class="p-3 w-40">ผลตรวจกายภาพทั่วไป</th>
+                <th class="p-3 w-48">ตรวจสอบการร้าวในแผ่น</th>
+                <th class="p-3 min-w-[280px]">อัปโหลดรูปภาพรอยร้าวรังสี (Drive/Local)</th>
+                <th class="p-3 w-16 text-center">ลบ</th>
+              </tr>
+            </thead>
+            <tbody id="equipment-rows-container" class="divide-y divide-slate-100 text-sm">
+              <!-- Rows will be injected recursively here via JavaScript -->
+            </tbody>
+          </table>
+          <div id="empty-equipment-note" class="hidden text-center py-8 text-slate-400 bg-slate-50/50 rounded-lg mt-2 border border-dashed border-slate-200 flex flex-col items-center gap-2">
+            <i data-lucide="package-search" class="w-8 h-8 text-slate-300"></i>
+            <span class="text-xs">ไม่มีเกียร์ป้องกันรังสีที่ระบุ กรุณากดปุ่มเพื่อสแกนหรือระบุไอเท็มสำหรับเครื่องนี้</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Part 4: Touch-Enabled Dual Signature Canvases -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-800 mb-1.5 flex items-center gap-2 text-indigo-950">
+          <i data-lucide="signature" class="w-5 h-5 text-indigo-600"></i> ส่วนที่ 4: ลายเซ็นดิจิตอลรับรองความถูกต้องปลอดภัยสองระดับ (Touch Panel Signature)
+        </h2>
+        <p class="text-xs text-slate-500 mb-5">รองรับการเขียนพอยเตอร์ผ่านหน้าจอสัมผัส (Tablets/Smartphones/Mice) เพื่อเซ็นรับรองอย่างมีประสิทธิผล</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <!-- Operator Signature Block -->
+          <div class="flex flex-col">
+            <label class="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider flex items-center justify-between">
+              <span>(1) ลงนามผู้จัดทำรายงานด้านรังสีเทคนิค (Operator Signature)</span>
+              <span id="canvas-status-1" class="text-slate-400 font-normal">ว่างเปล่า</span>
+            </label>
+            <canvas id="signature-operator" class="signature-canvas w-full h-44 shadow-inner" width="500" height="176"></canvas>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span class="text-[10px] text-slate-500">พนักงานผู้ดูแลการวิเคราะห์และรักษารังสี</span>
+              <button type="button" onclick="clearCanvas('signature-operator', 1)" class="px-3 py-1 text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> ลบลายเส้นเขียนใหม่
+              </button>
+            </div>
+          </div>
+
+          <!-- Reviewer Signature Block -->
+          <div class="flex flex-col">
+            <label class="block text-xs font-bold text-slate-600 mb-2 uppercase tracking-wider flex items-center justify-between">
+              <span>(2) ลายเซ็นหัวหน้าแผนกตรวจสอบผล (Reviewer Approval Signature)</span>
+              <span id="canvas-status-2" class="text-slate-400 font-normal">ว่างเปล่า</span>
+            </label>
+            <canvas id="signature-reviewer" class="signature-canvas w-full h-44 shadow-inner" width="500" height="176"></canvas>
+            <div class="mt-2.5 flex items-center justify-between">
+              <span class="text-[10px] text-slate-500">หัวหน้างานการพยาบาลและรังสีวิทยาควบคุมกล</span>
+              <button type="button" onclick="clearCanvas('signature-reviewer', 2)" class="px-3 py-1 text-xs border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> ลบลายเส้นเขียนใหม่
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Suggestions -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">คำแนะนำเพิ่มเติมสำหรับการบำรุงรักษาเชิงปะทะ (Maintenance & Action Comments)</label>
+        <textarea id="suggestions" rows="3" placeholder="ระบุความคิดเห็นทางรังสีวิทยา ปากกาบันทึกเชิงความปลอดภัย หรือแจ้งรายละเอียดอะไหล่ที่จำเป็นต้องตรวจสอบเพิ่มเติม" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+      </div>
+
+      <!-- Action Footer Buttons -->
+      <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4">
+        <button type="button" onclick="resetFullForm()" class="w-full sm:w-auto px-5 py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-semibold rounded-lg flex items-center justify-center gap-1.5">
+          <i data-lucide="trash-2" class="w-4.5 h-4.5"></i> ล้มล้างข้อมูลทั้งหมด
+        </button>
+        <button type="button" onclick="submitFormSecurely()" id="submit-btn" class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5">
+          <i data-lucide="send" class="w-4.5 h-4.5"></i> บันทึกเข้าระบบ Google Sheets
+        </button>
+      </div>
+
+    </section>
+
+    <!-- Tab 2: Dashboard & Reports View -->
+    <section id="dashboard-tab" class="space-y-8 hidden">
+      
+      <!-- Summary Key Metrics Display -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 no-print">
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+          <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+            <i data-lucide="calendar" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-slate-500 text-[10px] font-bold uppercase tracking-wide block">ตรวจสอบรอบปัจจุบัน</span>
+            <span class="text-base font-bold text-slate-800">ไตรมาสที่ 2/2569</span>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+          <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-slate-500 text-[10px] font-bold uppercase tracking-wide block">มาตรฐานความสอดคล้องรังสี</span>
+            <span id="stat-pass-rate" class="text-base font-bold text-slate-800">100% ผ่านเกณฑ์</span>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+          <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-slate-500 text-[10px] font-bold uppercase tracking-wide block">อุปกรณ์ป้องกันชำรุด/ร้าว</span>
+            <span id="stat-defect-count" class="text-base font-bold text-slate-800">ติตตามตรวจสอบ 0 รายการ</span>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
+          <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <i data-lucide="history" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-slate-500 text-[10px] font-bold uppercase tracking-wide block">ความถี่บันทึกสะสม</span>
+            <span id="stat-total-count" class="text-base font-bold text-slate-800">ประมวลผล 4 รายการ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live SVG Charts and Ratios Block -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 no-print">
+        
+        <!-- Pass Ratios visualizer in SVG -->
+        <div class="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-indigo-950 uppercase mb-4 tracking-wider flex items-center gap-1.5">
+              <i data-lucide="activity" class="w-4 h-4 text-emerald-500"></i> สัดส่วนผลทดสอบลำรังสี
+            </h3>
+            
+            <div class="flex items-center justify-center p-4">
+              <svg viewBox="0 0 100 100" class="w-32 h-32">
+                <!-- Inner standard donut visual using lightweight SVG calculations -->
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" stroke-width="12"></circle>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#10b981" stroke-width="12" stroke-dasharray="188.4 251.2" transform="rotate(-90 50 50)"></circle>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" stroke-width="12" stroke-dasharray="62.8 251.2" stroke-dashoffset="-188.4" transform="rotate(-90 50 50)"></circle>
+                <!-- Central stats -->
+                <text x="50" y="55" font-family="Sarabun" font-size="12" font-weight="bold" text-anchor="middle" fill="#1e293b">75%</text>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="space-y-2 mt-4">
+            <div class="flex justify-between items-center text-xs">
+              <span class="flex items-center gap-1.5 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>ผ่านสเปก (PASS)</span>
+              <span class="font-bold text-slate-700">3 เครื่อง</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="flex items-center gap-1.5 font-medium"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>ตกมาตรฐาน (FAIL)</span>
+              <span class="font-bold text-slate-700">1 เครื่อง</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric Categories visual progress bar -->
+        <div class="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-indigo-950 uppercase mb-4 tracking-wider flex items-center gap-1.5">
+              <i data-lucide="check-square" class="w-4 h-4 text-blue-500"></i> ภาพรวมคะแนนผ่านมาตรฐานเชิงกล (Mechanical Audit Percentages)
+            </h3>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-600 font-medium">1. โครงสร้างเชิงกลและความเสถียร (Control Stability & Safety Frame)</span>
+                  <span class="font-bold text-emerald-600">100%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: 100%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-600 font-medium">2. ระบบห้ามล้อกระทันหันและล็อคมุม (System Brake Integrity)</span>
+                  <span class="font-bold text-emerald-600">100%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: 100%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-600 font-medium">3. ไฟนำร่องและแสงนำทางคอลลิเมเตอร์ (Visual Collimator Output)</span>
+                  <span class="font-bold text-emerald-600">75%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: 75%"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-600 font-medium">4. เสถียรภาพรหัสตรวจสอบสายไฟฟ้าและสวิตช์หยุดฉุกเฉิน (Cables Security)</span>
+                  <span class="font-bold text-emerald-600">100%</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="text-[10px] text-slate-500 font-light mt-4 pt-4 border-t border-slate-100">
+            * ประมวลผลจากบันทึกรายงาน 30 แถวล่าสุดบน Google Sheets 'แผ่นที่1'
+          </div>
+        </div>
+
+      </div>
+
+      <!-- History Table & Filter Log -->
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 pb-2 border-b border-slate-100 no-print">
+          <div>
+            <h3 class="text-base font-bold text-indigo-950 flex items-center gap-1.5">
+              <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i> บันทึกรายงานประวัติการตรวจสอบสมรรถนะย้อนหลัง
+            </h3>
+            <p class="text-xs text-slate-500">สามารถค้นหาตัวกรองหรือเรียกดูรายงานทีละแผ่นเพื่อสั่งพิมพ์ PDF เป็นทางการ</p>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <select id="filterCategory" onchange="applyHistoryFilters()" class="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:bg-white text-slate-700 cursor-pointer">
+              <option value="ALL">เลือกตามประเภท: ทั้งหมด (All Logs)</option>
+              <option value="PASS">เลือกตามประเภท: ผลลำรังสีที่ผ่านเกณฑ์ (Pass Only)</option>
+              <option value="FAIL">เลือกตามประเภท: ผลลำรังสีที่ตกสเปก (Fail Only)</option>
+              <option value="DEFECTIVE-GEAR">เลือกตามประเภท: พบอุปกรณ์ชำรุด/ร้าว</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto no-print">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wide">
+                <th class="p-3">วันเวลาตรวจเช็ค</th>
+                <th class="p-3">หมายเลขเครื่อง</th>
+                <th class="p-3">ผู้บันทึก (Operator)</th>
+                <th class="p-3">โครงสร้างกล (F4)</th>
+                <th class="p-3 text-center">ระยะ SID (cm)</th>
+                <th class="p-3 text-center">ค่าคลาดเคลื่อน (X / Y)</th>
+                <th class="p-3 text-center">ผลทดสอบลำแสง</th>
+                <th class="p-3 text-center">เกียร์รังสีสะสม</th>
+                <th class="p-3 text-center">ลายเซ็นคู่</th>
+                <th class="p-3 text-center">รายงาน</th>
+              </tr>
+            </thead>
+            <tbody id="history-rows-container" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Formal PDF Layout Section (Hides during standard view, visible inside Print workflow) -->
+      <div id="print-view-section" class="hidden print-full-card bg-white p-8 rounded-xl border border-slate-300 mx-auto max-w-4xl shadow-sm text-slate-900 space-y-6">
+        
+        <!-- Diagnostic Document Header -->
+        <div class="text-center pb-4 border-b-2 border-slate-800">
+          <h2 class="text-2xl font-bold tracking-tight print-title text-black">แบบรายงานผลการตรวจวิเคราะห์คุณภาพเครื่องเอกซเรย์คัดกรอง</h2>
+          <p class="text-sm font-semibold text-slate-700 mt-1">แผนกรังสีเทคนิค โรงพยาบาลแม่ทา (Maetha Hospital Radiology Department)</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">เอกสารรายงานความถูกต้องเครื่องกลและด่านป้องกันรังสีไตรมาส (Quarterly Medical Checkup)</p>
+        </div>
+
+        <!-- Identity Block -->
+        <div class="grid grid-cols-2 gap-4 text-xs border border-slate-200 p-4 rounded-lg bg-slate-50/50">
+          <div>
+            <p><strong class="font-bold text-slate-800">วันเวลาดำเนินการเสร็จสิ้น (Timestamp):</strong> <span id="p-timestamp">-</span></p>
+            <p class="mt-1"><strong class="font-bold text-slate-800">หมายเลขประจำอุปกรณ์ (Device ID):</strong> <span id="p-machineId">-</span></p>
+          </div>
+          <div>
+            <p><strong class="font-bold text-slate-800">พนักงานผู้ควบคุม (Operator):</strong> <span id="p-operator">-</span></p>
+            <p class="mt-1"><strong class="font-bold text-slate-800">หัวหน้าผู้ตรวจทาน (Reviewer):</strong> <span id="p-reviewer">-</span></p>
+          </div>
+        </div>
+
+        <!-- Table 1: Structural QC -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-900 mb-2 border-b border-slate-400 pb-1 flex justify-between">
+            <span>• ผลประเมินโครงสร้างวิศวกรรมทางรังสี (Mechanical Stability Checks)</span>
+            <span>เกณฑ์มาตรฐาน F4</span>
+          </h4>
+          <table class="w-full text-left text-[11px] border-collapse border border-slate-300">
+            <thead>
+              <tr class="bg-slate-100 text-slate-800 border-b border-slate-300 font-bold">
+                <th class="p-2 border-r border-slate-300 w-12 text-center">#</th>
+                <th class="p-2 border-r border-slate-300">รายชื่อชิ้นส่วนและสวิตช์ประเมิน</th>
+                <th class="p-2 border-r border-slate-300 w-28 text-center">ผลการประเมิน</th>
+                <th class="p-2">หมายเหตุบันทึกวิศวกรรม</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-300 text-slate-700">
+              <tr>
+                <td class="p-1.5 border-r border-slate-300 text-center">1</td>
+                <td class="p-1.5 border-r border-slate-300 font-medium">ความเสถียรของโครงสร้างหลักเครื่องและหน้ากากปุ่มกดปุ่มเลื่อน (System Frame)</td>
+                <td class="p-1.5 border-r border-slate-300 text-center" id="p-m1">-</td>
+                <td class="p-1.5" id="p-m1-c">-</td>
+              </tr>
+              <tr>
+                <td class="p-1.5 border-r border-slate-300 text-center">2</td>
+                <td class="p-1.5 border-r border-slate-300 font-medium">ระบบเบรกแกนหมุนและแรงยึดเกาะกลไก (Locks & Brakes)</td>
+                <td class="p-1.5 border-r border-slate-300 text-center" id="p-m2">-</td>
+                <td class="p-1.5" id="p-m2-c">-</td>
+              </tr>
+              <tr>
+                <td class="p-1.5 border-r border-slate-300 text-center">3</td>
+                <td class="p-1.5 border-r border-slate-300 font-medium">หลอดสัญญาณประทีปและเลเซอร์คอลลิเมเตอร์ส่องทิศ (Collimator Grid)</td>
+                <td class="p-1.5 border-r border-slate-300 text-center" id="p-m3">-</td>
+                <td class="p-1.5" id="p-m3-c">-</td>
+              </tr>
+              <tr>
+                <td class="p-1.5 border-r border-slate-300 text-center">4</td>
+                <td class="p-1.5 border-r border-slate-300 font-medium">เสถียรภาพสายไฟพาวเวอร์หลักแรงสลับ (Cable System Integrity)</td>
+                <td class="p-1.5 border-r border-slate-300 text-center" id="p-m4">-</td>
+                <td class="p-1.5" id="p-m4-c">-</td>
+              </tr>
+              <tr>
+                <td class="p-1.5 border-r border-slate-300 text-center">5</td>
+                <td class="p-1.5 border-r border-slate-300 font-medium">การแจ้งแสดงข้อผิดพลาดบนคอนโซลควบคุมดิจิทัล (Display Console Screen)</td>
+                <td class="p-1.5 border-r border-slate-300 text-center" id="p-m5">-</td>
+                <td class="p-1.5" id="p-m5-c">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Table 2: Beam Alignment calculation report -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-900 mb-2 border-b border-slate-400 pb-1">• รายงานการทดสอบลำรังสีร่วมพิกัด (Beam Alignment Parameters)</h4>
+          <div class="grid grid-cols-3 gap-4 text-[11px] border border-slate-200 p-3 rounded-lg">
+            <div class="text-center border-r border-slate-200">
+              <span class="text-slate-500 block">ระยะตั้งต้น SID</span>
+              <strong id="p-sid" class="text-base text-slate-800">-</strong>
+            </div>
+            <div class="text-center border-r border-slate-200">
+              <span class="text-slate-500 block">ค่าคลาดเคลื่อนวัดจริง (X / Y)</span>
+              <strong id="p-error-dev" class="text-base text-indigo-900">-</strong>
+            </div>
+            <div class="text-center">
+              <span class="text-slate-500 block">บทสรุปผลการปรับตั้งลำแสง</span>
+              <strong id="p-beam-result" class="text-base uppercase">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Protection Equipments JSON representation table -->
+        <div>
+          <h4 class="text-xs font-bold text-slate-900 mb-2 border-b border-slate-400 pb-1">• ผลตรวจสอบชุดผ้ากันรังสีและอุปกรณ์ตะกั่วป้องกันสะสม (Radiation Protection Shields)</h4>
+          <table class="w-full text-left text-[11px] border-collapse border border-slate-300">
+            <thead>
+              <tr class="bg-slate-100 text-slate-800 border-b border-slate-300 font-bold">
+                <th class="p-2 border-r border-slate-300">รหัสอุปกรณ์และยี่ห้อ</th>
+                <th class="p-2 border-r border-slate-300 w-32 text-center">สภาพความสมบูรณ์</th>
+                <th class="p-2 text-center w-40">รอยแตกร้าวบนแผ่นกลืนรังสี</th>
+              </tr>
+            </thead>
+            <tbody id="p-gear-rows" class="divide-y divide-slate-300 text-slate-700">
+              <!-- Appended on runtime review -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Suggestion segment -->
+        <div class="text-xs border border-slate-200 p-3.5 rounded-lg bg-slate-50/50">
+          <strong class="font-bold text-slate-800 block mb-1">ความคิดเห็นเพิ่มเติมและการบูรณะเชิงคลินิกหลัก:</strong>
+          <p id="p-suggestions" class="italic text-slate-600">-</p>
+        </div>
+
+        <!-- Signatures Sign-Off Sheet Block -->
+        <div class="pt-8 grid grid-cols-2 gap-12 text-center text-xs">
+          <div class="flex flex-col items-center justify-end">
+            <div class="border-b border-slate-400 w-48 h-16 flex items-center justify-center">
+              <img id="p-sign-operator" src="" alt="operator signature" class="signature-preview max-h-14 hidden">
+              <span id="p-sign-operator-empty" class="text-slate-300 select-none font-light italic">ไม่ได้ลงลายมือชื่อ</span>
+            </div>
+            <span class="mt-2 text-slate-700 font-semibold" id="p-operator-seal">-</span>
+            <span class="text-[10px] text-slate-400 mt-0.5 mt-0.5">พนักงานรังสีเทคนิคผู้ดำเนินบันทึก</span>
+          </div>
+
+          <div class="flex flex-col items-center justify-end">
+            <div class="border-b border-slate-400 w-48 h-16 flex items-center justify-center">
+              <img id="p-sign-reviewer" src="" alt="reviewer signature" class="signature-preview max-h-14 hidden">
+              <span id="p-sign-reviewer-empty" class="text-slate-300 select-none font-light italic">ไม่ได้ลงลายมือชื่อ</span>
+            </div>
+            <span class="mt-2 text-slate-700 font-semibold" id="p-reviewer-seal">-</span>
+            <span class="text-[10px] text-slate-400 mt-0.5">หัวหน้าแผนกตรวจสอบสรุป</span>
+          </div>
+        </div>
+
+        <!-- Footer seal of Maetha Hospital -->
+        <div class="text-center pt-8 border-t border-slate-200">
+          <span class="text-[10px] text-slate-400 uppercase tracking-widest">โรงพยาบาลแม่ทา ต.ทาสบเส้า อ.แม่ทา จ.ลำพูน Tel: 053-976104</span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="bg-slate-900 text-slate-400 py-6 text-center border-t border-slate-800 text-xs mt-12 no-print">
+    <div class="max-w-7xl mx-auto px-4 space-y-2">
+      <p>ระบบบันทึกความปลอดภัยแผนกรังสีเทคนิค โรงพยาบาลแม่ทา (โรงพยาบาลชุมชนขนาด 30 เตียง จังหวัดลำพูน)</p>
+      <p class="text-[10px] text-slate-600 font-mono">Maetha Hospital QC System v2.1.0 • Built for Google Workspace Cloud Hosting Platform</p>
+    </div>
+  </footer>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-notif" class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white rounded-xl py-3.5 px-5 shadow-2 flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+    <div id="toast-icon-bg" class="p-1.5 rounded-lg text-emerald-400">
+      <i id="toast-icon" data-lucide="info" class="w-4.5 h-4.5"></i>
+    </div>
+    <div>
+      <h5 id="toast-title" class="text-xs font-bold">แจ้งเตือนสถานะ</h5>
+      <p id="toast-body" class="text-[11px] text-slate-400 mt-0.5">อัปเดตระบบตรวจเช็ค</p>
+    </div>
+  </div>
+
+  <!-- JavaScript Interaction Logic -->
+  <script>
+    // Initial datasets to populate reports on load
+    let dbHistory = [
+      {
+        timestamp: "16/06/2026, 09:24:12",
+        operatorName: "นายสมชาย แสนดี",
+        reviewerName: "นพ.เอกลักษณ์ ประคองกิจ",
+        machineId: "XRAY-GEN-01",
+        mechanicalStability: "PASS",
+        lockingBraking: "PASS",
+        collimatorIndicator: "PASS",
+        powerCables: "PASS",
+        displayStatus: "PASS",
+        sid: 100,
+        errorX: 0.4,
+        errorY: 0.6,
+        alignmentResult: "PASS",
+        protectionGear: [
+          { equipmentId: "Lead Apron A", visualStatus: "Normal", crackStatus: "No Cracks", imageUrl: "" },
+          { equipmentId: "Thyroid Collar B", visualStatus: "Normal", crackStatus: "No Cracks", imageUrl: "" }
+        ],
+        operatorSignUrl: "https://www.w3.org/TR/SVG11/images/shapes/rect01.png", 
+        reviewerSignUrl: "https://www.w3.org/TR/SVG11/images/shapes/rect01.png",
+        suggestions: "สถานะเครื่องสมบูรณ์ดีเยี่ยม แสงนำทางฉายพิทักษ์ตรงจุด"
+      },
+      {
+        timestamp: "12/06/2026, 14:15:33",
+        operatorName: "น.ส.อารี วงศ์วาน",
+        reviewerName: "นพ.เอกลักษณ์ ประคองกิจ",
+        machineId: "XRAY-PORT-01",
+        mechanicalStability: "PASS",
+        lockingBraking: "PASS",
+        collimatorIndicator: "PASS",
+        powerCables: "PASS",
+        displayStatus: "PASS",
+        sid: 100,
+        errorX: 1.1,
+        errorY: 1.5,
+        alignmentResult: "PASS",
+        protectionGear: [
+          { equipmentId: "Lead Glove C", visualStatus: "Damaged", crackStatus: "Cracks Found", imageUrl: "" }
+        ],
+        operatorSignUrl: "",
+        reviewerSignUrl: "",
+        suggestions: "พบรอยชำรุดบนปลอกแขนสวมขวาด้านล่าง ขออนุมัติเปลี่ยน"
+      },
+      {
+        timestamp: "05/06/2026, 10:02:11",
+        operatorName: "นายสมชาย แสนดี",
+        reviewerName: "นพ.เอกลักษณ์ ประคองกิจ",
+        machineId: "XRAY-GEN-02",
+        mechanicalStability: "PASS",
+        lockingBraking: "PASS",
+        collimatorIndicator: "FAIL",
+        powerCables: "PASS",
+        displayStatus: "PASS",
+        sid: 100,
+        errorX: 2.4,
+        errorY: 1.8,
+        alignmentResult: "FAIL",
+        protectionGear: [],
+        operatorSignUrl: "",
+        reviewerSignUrl: "",
+        suggestions: "คอลลิเมเตอร์หลอดไฟผิดเพี้ยนแนวแกน X แนะนำตั้งศูนย์กระเปาะฉายใหม่"
+      }
+    ];
+
+    let currentEquipmentRows = [];
+    let canvasDrafts = {
+      "signature-operator": { isDrawn: false, points: [] },
+      "signature-reviewer": { isDrawn: false, points: [] }
+    };
+
+    // Initialize Page Controls
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      
+      // Default populate equipment rows
+      addEquipmentRow("Lead Apron #1");
+      addEquipmentRow("Thyroid Shield #1");
+
+      // Initiate Drawing Listeners for both signature cards
+      initSignatureCanvas("signature-operator");
+      initSignatureCanvas("signature-reviewer");
+      
+      // Calculate collimator on start
+      calculateAlignment();
+
+      // Render default history table logs
+      renderHistoryTable();
+
+      // Try fetching active history from real GAS if available on cloud build
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((historyFromSheet) => {
+            if (historyFromSheet && historyFromSheet.length > 0) {
+              dbHistory = historyFromSheet;
+              renderHistoryTable();
+              updateSummaryAnalytics();
+            }
+          })
+          .getInspectionHistory();
+      }
+
+      updateSummaryAnalytics();
+    });
+
+    // Tab switcher
+    function switchTab(tabId) {
+      document.getElementById('form-tab').classList.add('hidden');
+      document.getElementById('dashboard-tab').classList.add('hidden');
+      
+      document.getElementById(tabId).classList.remove('hidden');
+
+      // Update Nav highlighting
+      const formBtn = document.getElementById('btn-form-tab');
+      const dashBtn = document.getElementById('btn-dashboard-tab');
+
+      if (tabId === 'form-tab') {
+        formBtn.className = "px-5 py-3 border-b-2 border-indigo-600 text-indigo-600 font-medium text-sm transition-all focus:outline-none flex items-center gap-2";
+        dashBtn.className = "px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm transition-all focus:outline-none flex items-center gap-2";
+      } else {
+        formBtn.className = "px-5 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 font-medium text-sm transition-all focus:outline-none flex items-center gap-2";
+        dashBtn.className = "px-5 py-3 border-b-2 border-indigo-600 text-indigo-600 font-medium text-sm transition-all focus:outline-none flex items-center gap-2";
+        updateSummaryAnalytics();
+      }
+    }
+
+    // Toast Utility Alert
+    function showToast(title, body, status = "success") {
+      const toast = document.getElementById('toast-notif');
+      const iconBg = document.getElementById('toast-icon-bg');
+      const icon = document.getElementById('toast-icon');
+      
+      document.getElementById('toast-title').textContent = title;
+      document.getElementById('toast-body').textContent = body;
+
+      if (status === "success") {
+        iconBg.className = "p-1.5 rounded-lg bg-emerald-50 text-emerald-600";
+        icon.setAttribute("data-lucide", "check");
+      } else if (status === "error") {
+        iconBg.className = "p-1.5 rounded-lg bg-red-50 text-red-600";
+        icon.setAttribute("data-lucide", "alert-circle");
+      } else {
+        iconBg.className = "p-1.5 rounded-lg bg-indigo-50 text-indigo-600";
+        icon.setAttribute("data-lucide", "info");
+      }
+
+      lucide.createIcons();
+
+      toast.classList.remove('opacity-0', 'translate-y-20', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-20', 'pointer-events-none');
+      }, 4000);
+    }
+
+    // Dynamic Protection Equipment Rows Logic
+    function addEquipmentRow(predefinedName = "") {
+      const id = 'row_' + Date.now() + Math.random().toString(36).substr(2, 5);
+      const container = document.getElementById('equipment-rows-container');
+      const rowElement = document.createElement('tr');
+      rowElement.id = id;
+      rowElement.className = "hover:bg-slate-50/50 transition-colors";
+
+      rowElement.innerHTML = `
+        <td class="p-3">
+          <input type="text" value="${predefinedName}" placeholder="เสื้อตะกั่ว / หุ้มคอ เบอร์..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </td>
+        <td class="p-3">
+          <select class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:bg-white focus:outline-none">
+            <option value="Normal">สมบูรณ์ (Normal)</option>
+            <option value="Damaged">ชำรุด (Damaged)</option>
+          </select>
+        </td>
+        <td class="p-3">
+          <select class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:bg-white focus:outline-none">
+            <option value="No Cracks">ไม่มีรอยร้าว (PASS)</option>
+            <option value="Cracks Found">พบรอยร้าว (FAIL)</option>
+          </select>
+        </td>
+        <td class="p-3">
+          <div class="flex flex-col gap-2">
+            <!-- Local file selection -->
+            <div class="flex items-center gap-1.5">
+              <label class="px-2.5 py-1.5 bg-slate-100 text-[10px] font-bold text-slate-700 border border-slate-200 rounded-md hover:bg-slate-200 cursor-pointer transition-all flex items-center gap-1">
+                <i data-lucide="image-up" class="w-3.5 h-3.5"></i> เลือกรูปภาพ
+                <input type="file" accept="image/*" onchange="handleFileSelected(this, '${id}')" class="hidden">
+              </label>
+              <span id="file-name-${id}" class="text-[10px] text-slate-400 font-light truncate max-w-[120px]">ไม่ได้แนบภาพ</span>
+            </div>
+            <!-- Alternative text link for Google Drive folders -->
+            <input type="text" id="drive-link-${id}" placeholder="หรือวางลิงก์ระบุตรง Google Drive" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[10px] focus:bg-white focus:outline-none">
+          </div>
+        </td>
+        <td class="p-3 text-center">
+          <button type="button" onclick="deleteEquipmentRow('${id}')" class="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-all focus:outline-none">
+            <i data-lucide="trash" class="w-4 h-4"></i>
+          </button>
+        </td>
+      `;
+
+      container.appendChild(rowElement);
+      currentEquipmentRows.push({ id, base64File: "", fileName: "" });
+      
+      lucide.createIcons();
+      toggleEmptyRowNote();
+    }
+
+    function deleteEquipmentRow(id) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.remove();
+        currentEquipmentRows = currentEquipmentRows.filter(r => r.id !== id);
+        toggleEmptyRowNote();
+      }
+    }
+
+    function toggleEmptyRowNote() {
+      const note = document.getElementById('empty-equipment-note');
+      if (currentEquipmentRows.length === 0) {
+        note.classList.remove('hidden');
+      } else {
+        note.classList.add('hidden');
+      }
+    }
+
+    function handleFileSelected(input, rowId) {
+      const file = input.files[0];
+      const statusLabel = document.getElementById(`file-name-${rowId}`);
+      
+      if (!file) {
+        statusLabel.textContent = "ไม่ได้แนบภาพ";
+        return;
+      }
+
+      statusLabel.textContent = file.name;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const index = currentEquipmentRows.findIndex(r => r.id === rowId);
+        if (index !== -1) {
+          currentEquipmentRows[index].base64File = e.target.result;
+          currentEquipmentRows[index].fileName = file.name;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Real-Time Beam Alignment (Collimator) Calculator
+    function calculateAlignment() {
+      const sid = parseFloat(document.getElementById('sid').value) || 100;
+      const errorX = parseFloat(document.getElementById('errorX').value) || 0;
+      const errorY = parseFloat(document.getElementById('errorY').value) || 0;
+
+      // Limit defined is exactly 2% of SID
+      const toleranceLimit = (2 / 100) * sid;
+      const computedError = Math.max(Math.abs(errorX), Math.abs(errorY));
+
+      document.getElementById('limit-label').textContent = `${toleranceLimit.toFixed(1)} cm`;
+      document.getElementById('actual-error-label').textContent = `${computedError.toFixed(1)} cm`;
+
+      const badge = document.getElementById('alignment-status-badge');
+      const boxVisual = document.getElementById('visual-beam-box');
+      const markerVisual = document.getElementById('visual-beam-center');
+
+      // Update graphic position using scalable coordinate mappings
+      // Centered at coord (100, 100). SID 100 implies 1cm = 5px on 200px SVG viewport.
+      const scaleFactor = 40 / toleranceLimit; // Maps limit to exact width boundary inside simulation
+      const targetOffsetX = errorX * scaleFactor;
+      const targetOffsetY = -errorY * scaleFactor; // invert Cartesian height inside SVG coordinate structure
+
+      // Set transform and properties
+      boxVisual.setAttribute('x', (100 + targetOffsetX - 10).toString());
+      boxVisual.setAttribute('y', (100 + targetOffsetY - 10).toString());
+      markerVisual.setAttribute('cx', (100 + targetOffsetX).toString());
+      markerVisual.setAttribute('cy', (100 + targetOffsetY).toString());
+
+      if (computedError <= toleranceLimit) {
+        badge.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i> ผ่านมาตรฐาน (PASS)`;
+        badge.className = "py-2.5 rounded-lg flex items-center justify-center gap-2 text-white font-bold tracking-wider text-sm transition-all duration-300 bg-emerald-600 shadow-sm shadow-emerald-100";
+        boxVisual.setAttribute('stroke', '#10b981'); // Emerald
+        boxVisual.setAttribute('fill', 'rgba(16,185,129,0.15)');
+        markerVisual.setAttribute('fill', '#10b981');
+      } else {
+        badge.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i> ตกเกณฑ์ขีดจำกัด (FAIL)`;
+        badge.className = "py-2.5 rounded-lg flex items-center justify-center gap-2 text-white font-bold tracking-wider text-sm transition-all duration-300 bg-red-600 shadow-sm shadow-red-100";
+        boxVisual.setAttribute('stroke', '#ef4444'); // Red
+        boxVisual.setAttribute('fill', 'rgba(239,68,68,0.15)');
+        markerVisual.setAttribute('fill', '#ef4444');
+      }
+
+      lucide.createIcons();
+    }
+
+    // Touch-Enabled Web HTML5 Signature Canvas Drawer
+    function initSignatureCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      
+      let drawing = false;
+
+      // Fit layout responsiveness
+      function fitCanvasCoordinates() {
+        const clientWidth = canvas.parentNode.clientWidth;
+        canvas.width = clientWidth;
+        canvas.height = 176; // Match standard design panel size
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#1e3a8a"; // Deep navy blue line signature color
+      }
+
+      fitCanvasCoordinates();
+      window.addEventListener('resize', fitCanvasCoordinates);
+
+      // Core Pointer Operations
+      const startDrawing = (x, y) => {
+        drawing = true;
+        ctx.beginPath();
+        const rect = canvas.getBoundingClientRect();
+        ctx.moveTo(x - rect.left, y - rect.top);
+        canvasDrafts[canvasId].isDrawn = true;
+        updateSignatureStatusGauge(canvasId);
+      };
+
+      const drawSegment = (x, y) => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(x - rect.left, y - rect.top);
+        ctx.stroke();
+      };
+
+      const stopDrawing = () => {
+        drawing = false;
+        ctx.closePath();
+      };
+
+      // Desktop Mice hooks
+      canvas.addEventListener("mousedown", (e) => startDrawing(e.clientX, e.clientY));
+      canvas.addEventListener("mousemove", (e) => drawSegment(e.clientX, e.clientY));
+      canvas.addEventListener("mouseup", stopDrawing);
+      canvas.addEventListener("mouseleave", stopDrawing);
+
+      // Mobile Touchscreen Hooks
+      canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          startDrawing(t.clientX, t.clientY);
+          e.preventDefault(); // Stop page scrolling
+        }
+      }, { passive: false });
+
+      canvas.addEventListener("touchmove", (e) => {
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          drawSegment(t.clientX, t.clientY);
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      canvas.addEventListener("touchend", (e) => {
+        stopDrawing();
+      });
+    }
+
+    function clearCanvas(canvasId, orderNo) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvasDrafts[canvasId].isDrawn = false;
+      updateSignatureStatusGauge(canvasId);
+    }
+
+    function updateSignatureStatusGauge(canvasId) {
+      const order = canvasId.endsWith("operator") ? 1 : 2;
+      const gauge = document.getElementById(`canvas-status-${order}`);
+      if (canvasDrafts[canvasId].isDrawn) {
+        gauge.textContent = "ลงนามแล้ว ✓";
+        gauge.className = "text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full text-[10px]";
+      } else {
+        gauge.textContent = "ว่างเปล่า";
+        gauge.className = "text-slate-400 font-normal";
+      }
+    }
+
+    // Submit Complete Inspection Form securely
+    function submitFormSecurely() {
+      const operatorName = document.getElementById('operatorName').value.trim();
+      const reviewerName = document.getElementById('reviewerName').value.trim();
+      const machineId = document.getElementById('machineId').value;
+      const suggestions = document.getElementById('suggestions').value.trim();
+
+      // Mechanical check states
+      const mStability = document.querySelector('input[name="mechanicalStability"]:checked').value;
+      const mLocking = document.querySelector('input[name="lockingBraking"]:checked').value;
+      const mCollimator = document.querySelector('input[name="collimatorIndicator"]:checked').value;
+      const mCables = document.querySelector('input[name="powerCables"]:checked').value;
+      const mDisplay = document.querySelector('input[name="displayStatus"]:checked').value;
+
+      // Collimator outputs
+      const sid = parseFloat(document.getElementById('sid').value) || 100;
+      const errorX = parseFloat(document.getElementById('errorX').value) || 0;
+      const errorY = parseFloat(document.getElementById('errorY').value) || 0;
+      const alignmentResult = (Math.max(Math.abs(errorX), Math.abs(errorY)) <= (2 / 100) * sid) ? "PASS" : "FAIL";
+
+      if (!operatorName) {
+        showToast("ผิดพลาด", "กรุณาระบุชื่อพนักงานรังสีเทคนิคผู้ตรวจสอบ", "error");
+        document.getElementById('operatorName').focus();
+        return;
+      }
+
+      // Check canvases
+      const operatorCanvas = document.getElementById('signature-operator');
+      const reviewerCanvas = document.getElementById('signature-reviewer');
+
+      const operatorSignatureBase64 = canvasDrafts["signature-operator"].isDrawn ? operatorCanvas.toDataURL("image/png") : "";
+      const reviewerSignatureBase64 = canvasDrafts["signature-reviewer"].isDrawn ? reviewerCanvas.toDataURL("image/png") : "";
+
+      // Process protection gears from dynamic rows DOM contents
+      const protectionGear = [];
+      const rows = document.querySelectorAll('#equipment-rows-container tr');
+      
+      rows.forEach((row, i) => {
+        const id = row.id;
+        const equipmentIdInput = row.cells[0].querySelector('input');
+        const visualSelect = row.cells[1].querySelector('select');
+        const crackSelect = row.cells[2].querySelector('select');
+        const driveLinkInput = row.cells[3].querySelector('input[type="text"]');
+        
+        // Find existing file payload from RAM
+        const rowData = currentEquipmentRows.find(r => r.id === id) || {};
+
+        if (equipmentIdInput && equipmentIdInput.value.trim()) {
+          protectionGear.push({
+            id: i + 1,
+            equipmentId: equipmentIdInput.value.trim(),
+            visualStatus: visualSelect.value,
+            crackStatus: crackSelect.value,
+            base64File: rowData.base64File || "",
+            driveLink: driveLinkInput ? driveLinkInput.value.trim() : ""
+          });
+        }
+      });
+
+      const payload = {
+        operatorName,
+        reviewerName,
+        machineId,
+        mechanicalStability: mStability,
+        lockingBraking: mLocking,
+        collimatorIndicator: mCollimator,
+        powerCables: mCables,
+        displayStatus: mDisplay,
+        sid,
+        errorX,
+        errorY,
+        alignmentResult,
+        suggestions,
+        operatorSignature: operatorSignatureBase64,
+        reviewerSignature: reviewerSignatureBase64,
+        protectionGear
+      };
+
+      // Disabler
+      const submitBtn = document.getElementById("submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span class="animate-spin mr-2">•</span> กำลังโอนย้ายฐานเอกสาร...`;
+
+      // Sim on local browser context
+      setTimeout(() => {
+        // Appending to dynamic memory history array
+        const mockNewEntry = {
+          timestamp: new Date().toLocaleString("th-TH"),
+          operatorName: payload.operatorName,
+          reviewerName: payload.reviewerName,
+          machineId: payload.machineId,
+          mechanicalStability: payload.mechanicalStability,
+          lockingBraking: payload.lockingBraking,
+          collimatorIndicator: payload.collimatorIndicator,
+          powerCables: payload.powerCables,
+          displayStatus: payload.displayStatus,
+          sid: payload.sid,
+          errorX: payload.errorX,
+          errorY: payload.errorY,
+          alignmentResult: payload.alignmentResult,
+          protectionGear: payload.protectionGear.map(g => ({
+            equipmentId: g.equipmentId,
+            visualStatus: g.visualStatus,
+            crackStatus: g.crackStatus,
+            imageUrl: g.driveLink || g.base64File || "" // placeholder base64 simulation
+          })),
+          operatorSignUrl: payload.operatorSignature,
+          reviewerSignUrl: payload.reviewerSignature,
+          suggestions: payload.suggestions
+        };
+
+        dbHistory.unshift(mockNewEntry);
+        
+        // standard safety response
+        showToast("สำเร็จ", `บันทึกข้อมูลเครื่องตรวจประเมิน ${payload.machineId} เข้าสู่ Google Sheet สำเร็จแล้ว`, "success");
+        
+        // Reset controls
+        resetFullForm();
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="send" class="w-4.5 h-4.5"></i> บันทึกเข้าระบบ Google Sheets`;
+        
+        // Force switch to tab dashboard metrics report
+        switchTab("dashboard-tab");
+      }, 1500);
+
+      // Execute on real Google app runtime container if accessible
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            if (res && res.status === "success") {
+              showToast("ระบบคลาวด์คืบหน้า", "บันทึกเซิร์ฟเวอร์เสร็จสมบูรณ์ภาพลิงก์ " + res.gearCount + " อุปกรณ์บูรณะแล้ว");
+            }
+          })
+          .saveDataToSheet(payload);
+      }
+    }
+
+    // Reset Form completely
+    function resetFullForm() {
+      document.getElementById('operatorName').value = "";
+      document.getElementById('reviewerName').value = "";
+      document.getElementById('suggestions').value = "";
+      document.getElementById('sid').value = "100";
+      document.getElementById('errorX').value = "0";
+      document.getElementById('errorY').value = "0";
+      
+      // Radio elements
+      const radios = document.querySelectorAll('input[type="radio"]');
+      radios.forEach(radio => {
+        if (radio.value === "PASS") radio.checked = true;
+      });
+
+      // Clear equipment rows container
+      document.getElementById('equipment-rows-container').innerHTML = "";
+      currentEquipmentRows = [];
+      addEquipmentRow("Lead Apron #1");
+
+      // Signatures reset
+      clearCanvas("signature-operator", 1);
+      clearCanvas("signature-reviewer", 2);
+
+      calculateAlignment();
+      toggleEmptyRowNote();
+    }
+
+    // Render History table for reports matching filters chosen
+    function renderHistoryTable() {
+      const container = document.getElementById('history-rows-container');
+      const filter = document.getElementById('filterCategory').value;
+      container.innerHTML = "";
+
+      let filteredData = dbHistory;
+      if (filter === "PASS") {
+        filteredData = dbHistory.filter(item => item.alignmentResult === "PASS");
+      } else if (filter === "FAIL") {
+        filteredData = dbHistory.filter(item => item.alignmentResult === "FAIL");
+      } else if (filter === "DEFECTIVE-GEAR") {
+        filteredData = dbHistory.filter(item => 
+          item.protectionGear && item.protectionGear.some(g => g.visualStatus === "Damaged" || g.crackStatus === "Cracks Found")
+        );
+      }
+
+      if (filteredData.length === 0) {
+        container.innerHTML = `
+          <tr>
+            <td colspan="10" class="text-center py-6 text-slate-400 font-light italic bg-slate-50/50">
+              ไม่พบบทบันทึกประวัติการตรวจสอบย้อนหลังที่สอดคล้องกับหัวข้อตัวกรองนี้
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      filteredData.forEach((item, index) => {
+        const gearText = item.protectionGear && item.protectionGear.length > 0 
+          ? `<span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full text-[10px] font-bold">${item.protectionGear.length} ชิ้น</span>`
+          : `<span class="text-slate-400 font-light">-</span>`;
+
+        const statusLabel = item.alignmentResult === "PASS"
+          ? `<span class="px-2 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-md font-semibold text-[10px] uppercase">PASS (ผ่าน)</span>`
+          : `<span class="px-2 py-1 bg-red-50 text-red-700 border border-red-100 rounded-md font-semibold text-[10px] uppercase">FAIL (ชำรุด)</span>`;
+
+        const signatureStatus = (item.operatorSignUrl || item.reviewerSignUrl)
+          ? `<span class="text-emerald-600 font-bold">✓ คู่</span>`
+          : `<span class="text-slate-300">-</span>`;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition-colors border-b border-slate-100";
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-slate-500">${item.timestamp}</td>
+          <td class="p-3 font-bold text-slate-800">${item.machineId}</td>
+          <td class="p-3">${item.operatorName}</td>
+          <td class="p-3 text-slate-500 font-mono">${item.mechanicalStability === "PASS" ? "สมบูรณ์" : "ต้องการแก้งาน"}</td>
+          <td class="p-3 text-center">${item.sid} cm</td>
+          <td class="p-3 text-center font-mono">X:${item.errorX} | Y:${item.errorY}</td>
+          <td class="p-3 text-center">${statusLabel}</td>
+          <td class="p-3 text-center">${gearText}</td>
+          <td class="p-3 text-center font-medium">${signatureStatus}</td>
+          <td class="p-3 text-center">
+            <button onclick="reviewAndPrintRow(${index})" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[11px] font-bold transition-all flex items-center gap-1 mx-auto leading-none">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i> ตรวจรายงาน
+            </button>
+          </td>
+        `;
+
+        container.appendChild(tr);
+      });
+
+      lucide.createIcons();
+    }
+
+    function applyHistoryFilters() {
+      renderHistoryTable();
+    }
+
+    // Refresh dynamic analytics scorecard heights
+    function updateSummaryAnalytics() {
+      const total = dbHistory.length;
+      document.getElementById('stat-total-count').textContent = `ประมวลผล ${total} รายการ`;
+
+      const passes = dbHistory.filter(h => h.alignmentResult === "PASS").length;
+      const passRate = total > 0 ? Math.round((passes / total) * 100) : 100;
+      document.getElementById('stat-pass-rate').textContent = `${passRate}% ผ่านเกณฑ์`;
+
+      let defectsCount = 0;
+      dbHistory.forEach(h => {
+        if (h.protectionGear) {
+          h.protectionGear.forEach(g => {
+            if (g.visualStatus === "Damaged" || g.crackStatus === "Cracks Found") defectsCount++;
+          });
+        }
+      });
+      document.getElementById('stat-defect-count').textContent = `ซ่อมบำรุง ${defectsCount} ตะกั่ว`;
+    }
+
+    // Formats individual records ready to execute window.print() CSS styles
+    function reviewAndPrintRow(historyIndex) {
+      const data = dbHistory[historyIndex];
+      if (!data) return;
+
+      // Populate elements of professional print section
+      document.getElementById('p-timestamp').textContent = data.timestamp;
+      document.getElementById('p-machineId').textContent = data.machineId;
+      document.getElementById('p-operator').textContent = data.operatorName;
+      document.getElementById('p-reviewer').textContent = data.reviewerName || "รอดอนุมัติประเมิน";
+
+      // Mechanical results
+      document.getElementById('p-m1').innerHTML = data.mechanicalStability === "PASS" ? "ผ่าน ✓" : "ชำรุด ✗";
+      document.getElementById('p-m2').innerHTML = data.lockingBraking === "PASS" ? "ผ่าน ✓" : "ชำรุด ✗";
+      document.getElementById('p-m3').innerHTML = data.collimatorIndicator === "PASS" ? "ผ่าน ✓" : "ชำรุด ✗";
+      document.getElementById('p-m4').innerHTML = data.powerCables === "PASS" ? "ผ่าน ✓" : "ชำรุด ✗";
+      document.getElementById('p-m5').innerHTML = data.displayStatus === "PASS" ? "ผ่าน ✓" : "ชำรุด ✗";
+
+      // Beam scores
+      document.getElementById('p-sid').textContent = `${data.sid} cm`;
+      document.getElementById('p-error-dev').textContent = `X: ${data.errorX} cm | Y: ${data.errorY} cm`;
+      
+      const beamResLabel = document.getElementById('p-beam-result');
+      beamResLabel.textContent = data.alignmentResult === "PASS" ? "ผ่านมาตรฐาน (PASS)" : "ไม่ผ่านเกณฑ์ (FAIL)";
+      beamResLabel.className = data.alignmentResult === "PASS" ? "text-emerald-600 text-base" : "text-red-600 text-base";
+
+      // Suggestions
+      document.getElementById('p-suggestions').textContent = data.suggestions || "ไม่มีบันทึกข้อเสนอแนะเพิ่มเติมสำหรับกระบวนงานตรวจสอบประเมินรอบนี้";
+
+      // Protection Gear layout append
+      const gearTable = document.getElementById('p-gear-rows');
+      gearTable.innerHTML = "";
+      
+      if (!data.protectionGear || data.protectionGear.length === 0) {
+        gearTable.innerHTML = `
+          <tr>
+            <td colspan="3" class="p-2 text-center text-slate-400 italic">ไม่มีอุปกรณ์ป้องกันรังสีที่ระบุตรวจเช็คสำหรับเครื่องตรวจรายการนี้</td>
+          </tr>
+        `;
+      } else {
+        data.protectionGear.forEach(gear => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="p-2 border-r border-slate-300 font-semibold">${gear.equipmentId}</td>
+            <td class="p-2 border-r border-slate-300 text-center">${gear.visualStatus === "Normal" ? "สภาพปกติ" : "พบจุดชำรุดฉีกขาด"}</td>
+            <td class="p-2 text-center">${gear.crackStatus === "No Cracks" ? "ไม่มีรอยร้าวรอยหัก" : "พบช่องส่งผ่านรังสีรั่ว"}</td>
+          `;
+          gearTable.appendChild(row);
+        });
+      }
+
+      // Populate signatures images if present
+      const opSignImg = document.getElementById('p-sign-operator');
+      const opSignEmpty = document.getElementById('p-sign-operator-empty');
+      const revSignImg = document.getElementById('p-sign-reviewer');
+      const revSignEmpty = document.getElementById('p-sign-reviewer-empty');
+
+      if (data.operatorSignUrl) {
+        opSignImg.src = data.operatorSignUrl;
+        opSignImg.classList.remove('hidden');
+        opSignEmpty.classList.add('hidden');
+      } else {
+        opSignImg.classList.add('hidden');
+        opSignEmpty.classList.remove('hidden');
+      }
+
+      if (data.reviewerSignUrl) {
+        revSignImg.src = data.reviewerSignUrl;
+        revSignImg.classList.remove('hidden');
+        revSignEmpty.classList.add('hidden');
+      } else {
+        revSignImg.classList.add('hidden');
+        revSignEmpty.classList.remove('hidden');
+      }
+
+      document.getElementById('p-operator-seal').textContent = `( ${data.operatorName} )`;
+      document.getElementById('p-reviewer-seal').textContent = `( ${data.reviewerName || "........................................."} )`;
+
+      // Show print container layout
+      const printSec = document.getElementById('print-view-section');
+      printSec.classList.remove('hidden');
+
+      // Scroll smoothly to print layout view block
+      printSec.scrollIntoView({ behavior: 'smooth' });
+
+      showToast("พร้อมส่งพิมพ์", "จัดเรียงแผ่นเอกสารทางการเสร็จสิ้น กรุณากด Ctrl+P เพื่อบันทึกเป็น PDF", "default");
+      
+      // Delay and trigger print popup
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+  </script>
+</body>
+</html>

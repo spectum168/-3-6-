@@ -1,0 +1,6 @@
+{
+  "name": "Radiology QC & Mechanical Inspection System",
+  "description": "ระบบตรวจสอบคุณภาพเครื่องเอกซเรย์และอุปกรณ์ป้องกันรังสี ประจำไตรมาส (3-6 เดือน) แผนกรังสีเทคนิค โรงพยาบาลแม่ทา",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
