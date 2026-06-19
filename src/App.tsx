@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import { 
   ShieldCheck, 
   ClipboardList, 
@@ -35,6 +35,295 @@ import {
 import { MechanicalCheck, EquipmentRow, InspectionReport } from './types';
 import SignaturePad from './components/SignaturePad';
 import BeamVisualizer from './components/BeamVisualizer';
+
+// --- VISUAL HIGH-FIDELITY SAMPLE DIAGRAM COMPONENTS (100% OFFLINE & IFRAME-SAFE FALLBACKS) ---
+
+interface CollimatorSampleSVGProps {
+  sid: number;
+  errorX: number;
+  errorY: number;
+  alignmentResult: string;
+}
+
+const CollimatorSampleSVG: React.FC<CollimatorSampleSVGProps> = ({ sid, errorX, errorY, alignmentResult }) => {
+  const isPass = alignmentResult === 'PASS';
+  const strokeColor = isPass ? '#10b981' : '#f43f5e';
+  
+  // Exaggerate errors slightly for a clear visual shift
+  const offsetX = isPass ? errorX * 6 : errorX * 14;
+  const offsetY = isPass ? errorY * 6 : errorY * 14;
+
+  return (
+    <div className="w-full h-full min-h-[140px] flex items-center justify-center bg-slate-900 border border-slate-700/60 rounded-lg overflow-hidden relative shadow-inner">
+      <svg viewBox="0 0 200 200" className="w-full h-full p-2" strokeLinecap="round" strokeLinejoin="round">
+        <defs>
+          <radialGradient id="collimatorGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor={isPass ? '#10b981' : '#f43f5e'} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={isPass ? '#10b981' : '#f43f5e'} stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        
+        {/* Subtle grid pattern background */}
+        <line x1="10" y1="100" x2="190" y2="100" stroke="#334155" strokeWidth="0.5" strokeDasharray="3 3" />
+        <line x1="100" y1="10" x2="100" y2="190" stroke="#334155" strokeWidth="0.5" strokeDasharray="3 3" />
+        <circle cx="100" cy="100" r="30" fill="none" stroke="#1e293b" strokeWidth="0.75" />
+        <circle cx="100" cy="100" r="60" fill="none" stroke="#1e293b" strokeWidth="0.75" strokeDasharray="4 4" />
+        <circle cx="100" cy="100" r="80" fill="none" stroke="#1e293b" strokeWidth="0.75" />
+
+        {/* Outer alignment limit margin line (2% of SID standard) */}
+        <circle cx="100" cy="100" r="70" fill="none" stroke="#475569" strokeWidth="1" strokeDasharray="1 3" />
+        <text x="105" y="165" fill="#475569" fontSize="6" fontFamily="monospace">LIMIT REGION (2% SID)</text>
+
+        {/* Center alignment boundary box */}
+        <rect x="65" y="65" width="70" height="70" fill="none" stroke="#334155" strokeWidth="1" />
+
+        {/* Light field boundary representing actual physical light (has shifted offset) */}
+        <g transform={`translate(${offsetX}, ${-offsetY})`}>
+          <circle cx="100" cy="100" r="42" fill="url(#collimatorGlow)" />
+          <rect x="58" y="58" width="84" height="84" fill="none" stroke="#0ea5e9" strokeWidth="1.25" />
+          <circle cx="100" cy="100" r="2.5" fill="#0ea5e9" />
+          <line x1="100" y1="92" x2="100" y2="108" stroke="#0ea5e9" strokeWidth="0.75" />
+          <line x1="92" y1="100" x2="108" y2="100" stroke="#0ea5e9" strokeWidth="0.75" />
+        </g>
+
+        {/* Target X-Ray Field perfect Center (solid static green/red lines) */}
+        <circle cx="100" cy="100" r="4" fill="none" stroke={strokeColor} strokeWidth="1.5" />
+        <path d="M 100,80 L 100,120 M 80,100 L 120,100" stroke={strokeColor} strokeWidth="1" />
+
+        {/* Informative text metrics overlays on top corner */}
+        <text x="12" y="24" fill="#94a3b8" fontSize="8" fontFamily="sans-serif" fontWeight="bold">COLLIMATOR ALIGNMENT</text>
+        <text x="12" y="34" fill="#64748b" fontSize="7" fontFamily="monospace">SID: {sid} cm</text>
+        <text x="12" y="44" fill={strokeColor} fontSize="7" fontFamily="monospace" fontWeight="bold">
+          BIAS: X={errorX.toFixed(1)}cm | Y={errorY.toFixed(1)}cm
+        </text>
+
+        {/* Diagnostics badge inside bottom */}
+        <g transform="translate(130, 20)">
+          <rect x="0" y="0" width="55" height="16" rx="3" fill={isPass ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)'} stroke={strokeColor} strokeWidth="0.75" />
+          <text x="27.5" y="11" fill={strokeColor} fontSize="7" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
+            {isPass ? 'QC PASS' : 'QC FAIL'}
+          </text>
+        </g>
+
+        {/* Technical branding accent */}
+        <text x="12" y="185" fill="#475569" fontSize="6" fontFamily="monospace">ภาพจำลองวิเคราะห์ตรวจพิกัดลําแสง</text>
+      </svg>
+    </div>
+  );
+};
+
+interface ShieldSampleSVGProps {
+  equipmentId: string;
+  visualStatus: string;
+  crackStatus: string;
+}
+
+const ShieldSampleSVG: React.FC<ShieldSampleSVGProps> = ({ equipmentId, visualStatus, crackStatus }) => {
+  const isCrack = crackStatus === 'Cracks Found';
+  const isNormalVisual = visualStatus === 'Normal';
+  const hasFailure = isCrack || !isNormalVisual;
+  const statusColor = hasFailure ? '#f43f5e' : '#10b981';
+  
+  const lowerName = equipmentId.toLowerCase();
+  const isCollar = lowerName.includes('collar') || lowerName.includes('throat') || lowerName.includes('neck') || lowerName.includes('shield');
+  const isGlove = lowerName.includes('glove');
+
+  return (
+    <div className="w-full h-full min-h-[140px] flex items-center justify-center bg-slate-900 border border-slate-700/60 rounded-lg overflow-hidden relative shadow-inner">
+      <svg viewBox="0 0 200 200" className="w-full h-full p-2" strokeLinecap="round" strokeLinejoin="round">
+        <defs>
+          <linearGradient id="shieldFill" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={isCollar ? '#c084fc' : isGlove ? '#38bdf8' : '#60a5fa'} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={isCollar ? '#a855f7' : isGlove ? '#0ea5e9' : '#2563eb'} stopOpacity="0.03" />
+          </linearGradient>
+        </defs>
+
+        {/* Circular Radar Background */}
+        <circle cx="100" cy="100" r="92" fill="none" stroke="#1e293b" strokeWidth="0.5" />
+        <circle cx="100" cy="100" r="62" fill="none" stroke="#1e293b" strokeWidth="0.5" strokeDasharray="4 4" />
+        <line x1="10" y1="100" x2="190" y2="100" stroke="#334155" strokeWidth="0.5" strokeDasharray="3 3" />
+        <line x1="100" y1="10" x2="100" y2="190" stroke="#334155" strokeWidth="0.5" strokeDasharray="3 3" />
+
+        {/* Interactive Radiography Silhouettes */}
+        {isCollar ? (
+          // Thyroid collar silhouette
+          <g transform="translate(0, 10)">
+            <path 
+              d="M 60,60 L 140,60 C 150,85 145,102 130,112 L 115,130 L 85,130 L 70,112 C 55,102 50,85 60,60 Z" 
+              fill="url(#shieldFill)" 
+              stroke="#c084fc" 
+              strokeWidth="1.5" 
+            />
+            {/* Soft inner texture */}
+            <path d="M 72,75 Q 100,90 128,75" fill="none" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="1 3" />
+            <path d="M 75,90 Q 100,105 125,90" fill="none" stroke="#1e293b" strokeWidth="1" />
+            
+            {/* Draw cracks if fail */}
+            {isCrack && (
+              <g transform="translate(85, 95)">
+                <path d="M 0,0 L 8,-12 L 15,-2 L 25,-15" fill="none" stroke="#f43f5e" strokeWidth="2" />
+                <circle cx="10" cy="-8" r="14" fill="none" stroke="#f43f5e" strokeWidth="0.75" strokeDasharray="2 2" />
+                <text x="26" y="5" fill="#f43f5e" fontSize="6" fontFamily="monospace" fontWeight="black" letterSpacing="0.5">CRACK</text>
+              </g>
+            )}
+          </g>
+        ) : isGlove ? (
+          // Lead protective gloves
+          <g transform="translate(10, 20)">
+            {/* Left Hand Glove */}
+            <path 
+              d="M 45,105 L 45,65 Q 45,48 55,50 Q 60,38 67,41 Q 73,38 77,43 L 80,105 Z" 
+              fill="url(#shieldFill)" 
+              stroke="#38bdf8" 
+              strokeWidth="1.25" 
+            />
+            {/* Right Hand Glove */}
+            <path 
+              d="M 135,105 L 135,65 Q 135,48 125,50 Q 120,38 113,41 Q 107,38 103,43 L 100,105 Z" 
+              fill="url(#shieldFill)" 
+              stroke="#38bdf8" 
+              strokeWidth="1.25" 
+            />
+            
+            {/* Draw cracks if fail */}
+            {isCrack && (
+              <g transform="translate(110, 60)">
+                <path d="M -5,5 L 5,-8 L 10,-3" fill="none" stroke="#f43f5e" strokeWidth="2" />
+                <circle cx="2" cy="-2" r="12" fill="none" stroke="#f43f5e" strokeWidth="0.75" strokeDasharray="1 1" />
+                <text x="14" y="2" fill="#f43f5e" fontSize="6" fontFamily="monospace" fontWeight="black">LEAK</text>
+              </g>
+            )}
+          </g>
+        ) : (
+          // Default heavy Lead Apron hanger layout
+          <g transform="translate(0, -2)">
+            {/* Hanger neck support hook */}
+            <path d="M 100,15 L 100,32" stroke="#475569" strokeWidth="1.5" />
+            <path d="M 92,19 Q 100,12 108,19" fill="none" stroke="#475569" strokeWidth="1.5" />
+            
+            {/* Apron Core */}
+            <path 
+              d="M 85,35 L 115,35 C 115,41 120,46 130,46 L 142,43 C 146,55 142,70 132,75 L 132,150 L 68,150 L 68,75 C 58,70 54,55 58,43 L 70,45 C 80,45 85,41 85,35 Z" 
+              fill="url(#shieldFill)" 
+              stroke="#38bdf8" 
+              strokeWidth="1.5" 
+            />
+            {/* Heavy lead waist band belt */}
+            <rect x="73" y="78" width="54" height="6" rx="2" fill="#0369a1" stroke="#38bdf8" strokeWidth="0.5" />
+            <line x1="68" y1="110" x2="132" y2="110" stroke="#1e293b" strokeWidth="0.75" strokeDasharray="2 2" />
+            
+            {/* Draw cracks if fail */}
+            {isCrack && (
+              <g transform="translate(85, 105)">
+                <path d="M -6,5 L 2,-6 L 8,-3 L 16,-10" fill="none" stroke="#f43f5e" strokeWidth="2.2" />
+                <circle cx="4" cy="-3" r="12" fill="none" stroke="#f43f5e" strokeWidth="0.75" strokeDasharray="2 2" />
+                <text x="18" y="2" fill="#f43f5e" fontSize="6" fontFamily="monospace" fontWeight="black">CRACK</text>
+              </g>
+            )}
+          </g>
+        )}
+
+        {/* Calibration specs overlay labels */}
+        <text x="12" y="24" fill="#94a3b8" fontSize="8" fontFamily="sans-serif" fontWeight="bold">SHIELD RADIOGRAPHY</text>
+        <text x="12" y="34" fill="#64748b" fontSize="7" fontFamily="monospace" truncate>{equipmentId.slice(0, 22)}</text>
+        
+        {/* Physical readings display HUD style */}
+        <g transform="translate(12, 162)">
+          <text x="0" y="8" fill={isNormalVisual ? '#10b981' : '#f43f5e'} fontSize="6.5" fontFamily="monospace">
+            VISUAL-STB: {isNormalVisual ? 'STABLE' : 'DAMAGED'}
+          </text>
+          <text x="0" y="15" fill={!isCrack ? '#10b981' : '#f43f5e'} fontSize="6.5" fontFamily="monospace">
+            LEAD-EQUIV: 0.50mmPb
+          </text>
+        </g>
+
+        {/* Analysis outcome badge */}
+        <g transform="translate(130, 165)">
+          <rect x="0" y="0" width="58" height="18" rx="3" fill={hasFailure ? 'rgba(244, 63, 94, 0.12)' : 'rgba(16, 185, 129, 0.12)'} stroke={statusColor} strokeWidth="1" />
+          <text x="29" y="12" fill={statusColor} fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">
+            {hasFailure ? 'FAIL' : 'PASS'}
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+};
+
+interface InspectionImageProps {
+  src?: string;
+  type: 'collimator' | 'shield';
+  equipmentId?: string;
+  visualStatus?: string;
+  crackStatus?: string;
+  sid?: number;
+  errorX?: number;
+  errorY?: number;
+  alignmentResult?: string;
+}
+
+const InspectionImage: React.FC<InspectionImageProps> = ({
+  src,
+  type,
+  equipmentId = '',
+  visualStatus = 'Normal',
+  crackStatus = 'No Cracks',
+  sid = 100,
+  errorX = 0,
+  errorY = 0,
+  alignmentResult = 'PASS'
+}) => {
+  const [hasError, setHasError] = useState(false);
+  const directUrl = src ? getDirectImageUrl(src) : '';
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  // If there is no image URL, render a clean, professional empty state placeholder
+  if (!directUrl) {
+    return (
+      <div className="w-full h-full min-h-[140px] flex flex-col items-center justify-center bg-slate-50 border border-slate-200 border-dashed rounded-lg p-3 text-center text-slate-400">
+        <span className="text-lg">📷</span>
+        <span className="text-[10px] font-bold font-sans mt-1">ไม่ได้แนบรูปภาพอ้างอิง</span>
+        <span className="text-[8px] text-slate-400 font-mono">No image attached</span>
+      </div>
+    );
+  }
+
+  // If there is an image URL, we ALWAYS render the actual <img> element to load the user's real image.
+  // If Chrome / browser blocks loading due to CORS/referrer-policy, show a transparent helpful warning with click-to-open instructions.
+  if (hasError) {
+    return (
+      <div className="w-full h-full min-h-[140px] p-3 flex flex-col items-center justify-center bg-slate-50 border border-slate-200 rounded-lg text-slate-500 text-center relative hover:bg-slate-100 transition-colors">
+        <span className="text-base text-amber-500 mb-1">⚠️</span>
+        <span className="text-[10px] font-bold text-slate-700 leading-tight">ลิงก์ไม่รองรับการแสดงผลตรงในเว็บเบราว์เซอร์</span>
+        <p className="text-[8px] text-slate-400 mt-1 leading-snug max-w-[90%] px-1 font-sans">
+          (มีข้อกำหนด CORS หรือสิทธิ์แชร์ในไดรฟ์) คลิกกรอบนี้เพื่อเปิดรูปต้นฉบับในแท็บใหม่
+        </p>
+        <div className="absolute bottom-1 right-1 left-1 bg-indigo-50 border border-indigo-100/50 py-0.5 px-1 truncate rounded text-[7px] font-mono text-indigo-700 text-center">
+          คลิกเปิดดู: {src.substring(0, 35)}...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full relative group min-h-[140px] rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+      <img
+        src={directUrl}
+        alt={type === 'collimator' ? 'Collimator Alignment' : equipmentId}
+        className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+        referrerPolicy="no-referrer"
+        onError={() => setHasError(true)}
+      />
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center pointer-events-none print:hidden">
+        <span className="bg-slate-900/80 text-white text-[8px] tracking-wider font-bold px-2 py-1 rounded shadow">
+          คลิกเปิดดูรูปความละเอียดสูง ↗
+        </span>
+      </div>
+    </div>
+  );
+};
 
 // Default checklists template
 const DEFAULT_CHECKS: MechanicalCheck[] = [
@@ -133,18 +422,18 @@ const getDirectImageUrl = (url: string | undefined): string => {
   
   if (trimmed.startsWith('data:')) return trimmed;
   
-  // Convert Google Drive sharing link to a direct loadable image source url
+  // Convert Google Drive sharing link to a highly reliable, cookie-wall and CORS-friendly thumbnail URL
   const driveFilePattern = /\/file\/d\/([a-zA-Z0-9_-]+)/;
   const driveOpenPattern = /[?&]id=([a-zA-Z0-9_-]+)/;
   
   let match = trimmed.match(driveFilePattern);
   if (match && match[1]) {
-    return `https://docs.google.com/uc?export=view&id=${match[1]}`;
+    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
   }
   
   match = trimmed.match(driveOpenPattern);
   if (match && match[1]) {
-    return `https://docs.google.com/uc?export=view&id=${match[1]}`;
+    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
   }
   
   return trimmed;
@@ -1243,63 +1532,77 @@ export default function App() {
                     <h4 className="text-xs font-bold text-black mb-1.5 pb-1 border-b border-slate-400">
                       <span>• รายงานพิกัดคำนวณเบี่ยงเบนลำแสงคอลลิเมเตอร์ (Collimator accuracy parameters)</span>
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 border border-slate-200 p-3 bg-slate-50/50 rounded-lg font-medium">
-                      <div className="text-center flex flex-col justify-center">
-                        <span className="text-slate-500 block">ระยะฉายทดสอบ (SID)</span>
-                        <strong className="text-sm font-extrabold text-slate-800 font-mono">{history[activeReportIndex].sid} cm</strong>
-                      </div>
-                      <div className="text-center flex flex-col justify-center">
-                        <span className="text-slate-500 block">ค่าคลาดเคลื่อนแนวเฉลยสูงสุด</span>
-                        <strong className="text-sm font-extrabold text-slate-800 font-mono">
-                          X = {history[activeReportIndex].errorX.toFixed(1)} cm | Y = {history[activeReportIndex].errorY.toFixed(1)} cm
-                        </strong>
-                      </div>
-                      <div className="text-center flex flex-col justify-center">
-                        <span className="text-slate-500 block">บทวิเคราะห์ระบบความปลอดภัย</span>
-                        <strong className={`text-sm font-extrabold ${history[activeReportIndex].alignmentResult === 'PASS' ? 'text-emerald-700' : 'text-rose-600'}`}>
-                          {history[activeReportIndex].alignmentResult === 'PASS' ? 'ผ่านมาตรฐาน (PASS)' : 'ตกมาตรฐาน (FAIL)'}
-                        </strong>
-                      </div>
-                      <div className="border-t md:border-t-0 md:border-l border-slate-200 pt-2.5 md:pt-0 md:pl-3 flex flex-col justify-center items-center">
-                        <span className="text-slate-500 block text-center mb-1 text-[10px]">ภาพถ่ายตรวจสภาพ / ภาพอ้างอิง</span>
-                        {history[activeReportIndex].collimatorLinks && history[activeReportIndex].collimatorLinks!.filter(l => l.trim() !== '').length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5 items-center justify-center">
-                            {history[activeReportIndex].collimatorLinks!.filter(l => l.trim() !== '').map((link, idx) => (
-                              <a
-                                key={idx}
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="relative group/print h-9 w-12 border border-slate-200 rounded-md overflow-hidden bg-slate-50 cursor-pointer block hover:ring-1 hover:ring-indigo-500 transition-all shadow-sm"
-                                title="คลิกเพื่อเปิดดูรูปภาพความละเอียดสูงในแท็บใหม่"
-                              >
-                                <img 
-                                  src={getDirectImageUrl(link)} 
-                                  alt="Collimator report thumb" 
-                                  className="h-full w-full object-cover"
-                                  referrerPolicy="no-referrer"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    const parent = e.currentTarget.parentElement;
-                                    if (parent) {
-                                      const fallback = document.createElement('div');
-                                      fallback.className = "absolute inset-0 flex items-center justify-center bg-slate-100 text-[6px] text-slate-500 text-center uppercase";
-                                      fallback.innerText = "เปิดลิงก์";
-                                      parent.appendChild(fallback);
-                                    }
-                                  }}
-                                />
-                                <span className="absolute bottom-0 right-0 left-0 bg-slate-900/65 text-[5px] text-white font-bold text-center py-0.5 uppercase tracking-wider print:hidden">
-                                  เปิดดู
-                                </span>
-                              </a>
-                            ))}
+                    {(() => {
+                      const colLinks = history[activeReportIndex].collimatorLinks 
+                        ? history[activeReportIndex].collimatorLinks!.filter(l => l.trim() !== '') 
+                        : [];
+
+                      return (
+                        <div className="grid grid-cols-4 gap-4">
+                          {/* Left Column (3/4 width): metrics box */}
+                          <div className="col-span-3 grid grid-cols-3 gap-3 border border-slate-200 p-3 bg-slate-50/50 rounded-lg text-center font-medium">
+                            <div className="flex flex-col justify-center">
+                              <span className="text-slate-500 block text-[10px] md:text-xs">ระยะฉายทดสอบ (SID)</span>
+                              <strong className="text-sm md:text-base font-extrabold text-slate-800 font-mono">{history[activeReportIndex].sid} cm</strong>
+                            </div>
+                            <div className="flex flex-col justify-center border-l border-slate-200/40 px-2">
+                              <span className="text-slate-500 block text-[10px] md:text-xs">ค่าคลาดเคลื่อนแนวเฉลยสูงสุด</span>
+                              <strong className="text-sm md:text-base font-extrabold text-slate-800 font-mono">
+                                X = {history[activeReportIndex].errorX.toFixed(1)} cm | Y = {history[activeReportIndex].errorY.toFixed(1)} cm
+                              </strong>
+                            </div>
+                            <div className="flex flex-col justify-center border-l border-slate-200/40 pl-2">
+                              <span className="text-slate-500 block text-[10px] md:text-xs">บทวิเคราะห์ระบบความปลอดภัย</span>
+                              <strong className={`text-xs md:text-sm font-extrabold ${history[activeReportIndex].alignmentResult === 'PASS' ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                {history[activeReportIndex].alignmentResult === 'PASS' ? 'ผ่านมาตรฐาน (PASS)' : 'ตกมาตรฐาน (FAIL)'}
+                              </strong>
+                            </div>
                           </div>
-                        ) : (
-                          <span className="text-slate-400 text-[9px] font-light text-center">ไม่ได้แนบภาพถ่ายคอลลิเมเตอร์</span>
-                        )}
-                      </div>
-                    </div>
+
+                          {/* Right Column (1/4 width): large photo / HUD fallback */}
+                          <div className="col-span-1 border-l border-slate-200 pl-4 space-y-2">
+                            <div className="text-[10px] font-bold text-slate-700 pb-1 mb-1 bg-slate-50 p-1 rounded border border-slate-100 text-center">
+                              📸 ภาพอ้างอิงลำแสง
+                            </div>
+                            <div className="space-y-2">
+                              {colLinks.length > 0 ? (
+                                colLinks.map((link, idx) => (
+                                  <div key={idx} className="relative group/print w-full h-32 border border-slate-200 rounded-lg overflow-hidden bg-slate-50 shadow-sm transition-all hover:shadow cursor-pointer">
+                                    <a
+                                      href={link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="w-full h-full block"
+                                      title="คลิกเพื่อเปิดดูรูปภาพความละเอียดสูงในแท็บใหม่"
+                                    >
+                                      <InspectionImage 
+                                        src={link} 
+                                        type="collimator"
+                                        sid={history[activeReportIndex].sid}
+                                        errorX={history[activeReportIndex].errorX}
+                                        errorY={history[activeReportIndex].errorY}
+                                        alignmentResult={history[activeReportIndex].alignmentResult}
+                                      />
+                                    </a>
+                                  </div>
+                                ))
+                              ) : (
+                                // No custom image? Render the calibration HUD SVG directly!
+                                <div className="w-full h-32">
+                                  <InspectionImage 
+                                    type="collimator"
+                                    sid={history[activeReportIndex].sid}
+                                    errorX={history[activeReportIndex].errorX}
+                                    errorY={history[activeReportIndex].errorY}
+                                    alignmentResult={history[activeReportIndex].alignmentResult}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Section 3: Radiation Shields list */}
@@ -1307,71 +1610,92 @@ export default function App() {
                     <h4 className="text-xs font-bold text-black mb-1.5 pb-1 border-b border-slate-400">
                       <span>• แบบรายงานผลการฉายรังสีตรวจแตกร้าวของแผ่นตะกั่วกำบัง (Shield protection list)</span>
                     </h4>
-                    <table className="w-full text-left text-[11px] border-collapse border border-slate-300">
-                      <thead>
-                        <tr className="bg-indigo-50 border-b border-slate-300 text-slate-800 font-bold">
-                          <th className="p-2 border-r border-slate-300 text-black">รหัสตรวจวัด / ยี่ห้อเกราะป้องกัน</th>
-                          <th className="p-2 border-r border-slate-300 text-black w-36 text-center">สภาพเย็บขอบตะกั่วภายนอก</th>
-                          <th className="p-2 border-r border-slate-300 text-center text-black w-40">ผลเบี่ยงเบนหรือรอยแตกรังสี</th>
-                          <th className="p-2 text-center text-black w-44">ภาพถ่ายตรวจสภาพ / ภาพอ้างอิง</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-300 text-slate-800">
-                        {history[activeReportIndex].protectionGear.length === 0 ? (
-                          <tr>
-                            <td colSpan={4} className="p-2 text-center text-slate-400 italic">ไม่ได้พ่วงหรือระบุจัดตรวจอุปกรณ์ป้องกันรังสีสำหรับเครื่องประเภทนี้</td>
-                          </tr>
-                        ) : (
-                          history[activeReportIndex].protectionGear.map((g, i) => {
-                            const actualImg = g.imageUrl;
+                    {(() => {
+                      const gears = history[activeReportIndex].protectionGear || [];
+                      
+                      if (gears.length === 0) {
+                        return (
+                          <div className="p-3 text-center text-slate-400 bg-slate-50 rounded-lg border border-slate-200 italic text-[11px]">
+                            ไม่ได้พ่วงหรือระบุจัดตรวจอุปกรณ์ป้องกันรังสีสำหรับเครื่องประเภทนี้
+                          </div>
+                        );
+                      }
 
-                            return (
-                              <tr key={i}>
-                                <td className="p-1.5 border-r border-slate-300 font-mono font-bold text-slate-900">{g.equipmentId}</td>
-                                <td className="p-1.5 border-r border-slate-300 text-center">
-                                  {g.visualStatus === 'Normal' ? 'สมบูรณ์ดี' : 'ชำรุดเสียหายเกลียวหัก'}
-                                </td>
-                                <td className="p-1.5 border-r border-slate-300 text-center font-bold">
-                                  {g.crackStatus === 'No Cracks' 
-                                    ? <span className="text-emerald-700 font-bold">ไม่มีร้าวผ่านฉลุย (PASS)</span> 
-                                    : <span className="text-rose-600 font-black">พบแนวร้าวรังสีรั่ว (FAIL)</span>
-                                  }
-                                </td>
-                                <td className="p-1.5 text-center">
-                                  {actualImg && actualImg.trim() ? (
-                                    <div className="flex items-center justify-center gap-1.5">
+                      return (
+                        <div className="grid grid-cols-4 gap-4">
+                          {/* Left Column: 3/4 width results table */}
+                          <div className="col-span-3">
+                            <table className="w-full text-left text-[11px] border-collapse border border-slate-300">
+                              <thead>
+                                <tr className="bg-indigo-50 border-b border-slate-300 text-slate-800 font-bold">
+                                  <th className="p-2 border-r border-slate-300 text-black">รหัสตรวจวัด / ยี่ห้อเกราะป้องกัน</th>
+                                  <th className="p-2 border-r border-slate-300 text-black w-36 text-center">สภาพเย็บขอบตะกั่วภายนอก</th>
+                                  <th className="p-2 text-center text-black w-40">ผลเบี่ยงเบนหรือรอยแตกรังสี</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-300 text-slate-800">
+                                {gears.map((g, i) => (
+                                  <tr key={i}>
+                                    <td className="p-1.5 border-r border-slate-300 font-mono font-bold text-slate-900">{g.equipmentId}</td>
+                                    <td className="p-1.5 border-r border-slate-300 text-center">
+                                      {g.visualStatus === 'Normal' ? 'สมบูรณ์ดี' : 'ชำรุดเสียหายเกลียวหัก'}
+                                    </td>
+                                    <td className="p-1.5 text-center font-bold">
+                                      {g.crackStatus === 'No Cracks' 
+                                        ? <span className="text-emerald-700 font-bold">ไม่มีร้าวผ่านฉลุย (PASS)</span> 
+                                        : <span className="text-rose-600 font-black">พบแนวร้าวรังสีรั่ว (FAIL)</span>
+                                      }
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Right Column: 1/4 width large image section */}
+                          <div className="col-span-1 border-l border-slate-200 pl-4 space-y-3">
+                            <div className="text-[10px] font-bold text-slate-700 border-b border-slate-200 pb-1 mb-2 bg-slate-50 px-1 py-0.5 rounded text-center">
+                              📸 ภาพถ่ายตรวจสภาพจริง
+                            </div>
+                            <div className="space-y-3">
+                              {gears.map((g, idx) => (
+                                <div key={idx} className="space-y-1">
+                                  <div className="relative block w-full h-32 border border-slate-200 rounded-lg overflow-hidden bg-slate-50 transition-all hover:shadow cursor-pointer group">
+                                    {g.imageUrl ? (
                                       <a
-                                        href={actualImg}
+                                        href={g.imageUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="relative group/print h-9 w-12 border border-slate-200 rounded-md overflow-hidden bg-slate-50 cursor-pointer block hover:ring-1 hover:ring-indigo-500 transition-all shadow-sm"
-                                        title="คลิกเพื่อเปิดดูรูปภาพความละเอียดสูงในแท็บใหม่"
+                                        className="w-full h-full block"
+                                        title={`คลิกเพื่อเปิดดูภาพความละเอียดสูงของ ${g.equipmentId}`}
                                       >
-                                        <img 
-                                          src={getDirectImageUrl(actualImg)} 
-                                          alt="Equipment report thumb" 
-                                          className="h-full w-full object-cover"
-                                          referrerPolicy="no-referrer"
-                                          onError={(e) => {
-                                            // Quietly hide if load breaks
-                                            e.currentTarget.style.display = 'none';
-                                          }}
+                                        <InspectionImage 
+                                          src={g.imageUrl} 
+                                          type="shield"
+                                          equipmentId={g.equipmentId}
+                                          visualStatus={g.visualStatus}
+                                          crackStatus={g.crackStatus}
                                         />
-                                        <span className="absolute bottom-0 right-0 left-0 bg-slate-900/65 text-[6px] text-white font-bold text-center py-0.5 uppercase tracking-wider print:hidden">
-                                          เปิดรูป
-                                        </span>
                                       </a>
-                                    </div>
-                                  ) : (
-                                    <span className="text-slate-400 text-[10px] font-light">ไม่ได้แนบภาพถ่ายหลักฐาน</span>
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
+                                    ) : (
+                                      <InspectionImage 
+                                        type="shield"
+                                        equipmentId={g.equipmentId}
+                                        visualStatus={g.visualStatus}
+                                        crackStatus={g.crackStatus}
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="text-[8px] font-bold text-slate-700 truncate text-center bg-slate-50 border border-slate-200/60 px-1 py-0.5 rounded-md" title={g.equipmentId}>
+                                    {g.equipmentId}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Suggestion Comments box */}
